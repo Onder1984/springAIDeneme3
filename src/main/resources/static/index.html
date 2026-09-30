@@ -14,26 +14,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-void: #06090e;
-            --bg-dark: #0a0e14;
-            --bg-panel: #0e141d;
-            --bg-card: #131b27;
-            --bg-card-hover: #192333;
-            --border-dim: #1d2838;
-            --border-subtle: #243449;
-            --border-glow: rgba(0, 229, 255, 0.25);
-            --accent-cyan: #00e5ff;
-            --accent-cyan-dim: rgba(0, 229, 255, 0.12);
-            --accent-green: #00e676;
-            --accent-green-dim: rgba(0, 230, 118, 0.12);
-            --accent-amber: #ffb300;
-            --accent-amber-dim: rgba(255, 179, 0, 0.12);
-            --accent-red: #ff1744;
-            --accent-red-dim: rgba(255, 23, 68, 0.12);
-            --accent-purple: #b388ff;
-            --text-main: #e2e8f0;
-            --text-muted: #8496ad;
-            --text-dim: #55687f;
+            /* Muted Tactical Military Slate / Stealth Theme (Low Eye Strain) */
+            --bg-void: #0a0e14;
+            --bg-dark: #0f141d;
+            --bg-panel: #131a24;
+            --bg-card: #17212e;
+            --bg-card-hover: #1e2a3a;
+            --border-dim: #222d3d;
+            --border-subtle: #2b394d;
+            --border-glow: rgba(95, 168, 211, 0.15);
+
+            /* Subdued, Muted Accents */
+            --accent-cyan: #5fa8d3;
+            --accent-cyan-dim: rgba(95, 168, 211, 0.12);
+            --accent-green: #52b788;
+            --accent-green-dim: rgba(82, 183, 136, 0.12);
+            --accent-amber: #d4a373;
+            --accent-amber-dim: rgba(212, 163, 115, 0.12);
+            --accent-red: #c95d63;
+            --accent-red-dim: rgba(201, 93, 99, 0.12);
+            --accent-purple: #9d8ec2;
+            --accent-purple-dim: rgba(157, 142, 194, 0.12);
+
+            /* Calmed Text Shades */
+            --text-main: #cbd5e1;
+            --text-muted: #8b9cb0;
+            --text-dim: #5c6c7f;
+
             --font-mono: 'JetBrains Mono', monospace;
             --font-display: 'Chakra Petch', sans-serif;
             --font-ui: 'Inter', sans-serif;
@@ -78,8 +85,8 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            background: rgba(0, 229, 255, 0.08);
-            border: 1px solid rgba(0, 229, 255, 0.35);
+            background: rgba(95, 168, 211, 0.08);
+            border: 1px solid rgba(95, 168, 211, 0.30);
             padding: 4px 10px;
             border-radius: 4px;
             color: var(--accent-cyan);
@@ -98,9 +105,12 @@
         }
 
         @keyframes pulse-ring {
-            0% { transform: scale(0.9); opacity: 0.6; box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7); }
-            70% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 0 6px rgba(0, 230, 118, 0); }
-            100% { transform: scale(0.9); opacity: 0.6; box-shadow: 0 0 0 0 rgba(0, 230, 118, 0); }
+            0% { transform: scale(0.92); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 0.9; }
+            100% { transform: scale(0.92); opacity: 0.6; }
+        }
+            70% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 0 6px rgba(82, 183, 136, 0); }
+            100% { transform: scale(0.9); opacity: 0.6; box-shadow: 0 0 0 0 rgba(82, 183, 136, 0); }
         }
 
         .c2-title {
@@ -337,7 +347,7 @@
 
         .agent-card-body code {
             font-family: var(--font-mono);
-            background: rgba(0, 229, 255, 0.08);
+            background: rgba(95, 168, 211, 0.08);
             border: 1px solid rgba(0, 229, 255, 0.2);
             color: var(--accent-cyan);
             padding: 1px 5px;
@@ -441,9 +451,9 @@
         }
         .log-entry.tool-call { color: #80d8ff; background: rgba(0, 229, 255, 0.05); }
         .log-entry.tool-res { color: #69f0ae; background: rgba(0, 230, 118, 0.05); }
-        .log-entry.outbound { color: #ffd54f; }
-        .log-entry.inbound { color: #b388ff; }
-        .log-entry.error { color: #ff5252; background: rgba(255, 23, 68, 0.1); }
+        .log-entry.outbound { color: var(--accent-amber); }
+        .log-entry.inbound { color: var(--accent-purple); }
+        .log-entry.error { color: var(--accent-red); background: rgba(255, 23, 68, 0.1); }
 
         /* Tactical Chart Card in Chat Bubble */
         .tactical-chart-card {
@@ -511,25 +521,30 @@
         }
 
         .chip-btn {
-            background: var(--bg-card);
-            border: 1px solid var(--border-dim);
+            background: #131a24;
+            border: 1px solid var(--border-subtle);
             color: var(--text-muted);
             font-family: var(--font-mono);
             font-size: 11px;
             padding: 5px 11px;
-            border-radius: 14px;
+            border-radius: 4px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            white-space: nowrap;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            flex-shrink: 0;
+            gap: 6px;
+        }
+        .chip-btn:hover {
+            background: #1e2a3a;
+            border-color: var(--accent-cyan);
+            color: var(--text-main);
         }
 
         .chip-btn:hover {
             color: #ffffff;
             border-color: var(--accent-cyan);
-            background: rgba(0, 229, 255, 0.08);
+            background: rgba(95, 168, 211, 0.08);
             transform: translateY(-1px);
         }
 
@@ -560,7 +575,7 @@
 
         .page-status-pill {
             background: rgba(0, 229, 255, 0.05);
-            border: 1px solid rgba(0, 229, 255, 0.25);
+            border: 1px solid rgba(95, 168, 211, 0.15);
             padding: 6px 14px;
             border-radius: 6px;
             font-family: var(--font-mono);
@@ -621,7 +636,7 @@
         }
 
         .btn-next-page:hover {
-            background: linear-gradient(135deg, rgba(0, 229, 255, 0.35), rgba(0, 176, 255, 0.5));
+            background: linear-gradient(135deg, rgba(95, 168, 211, 0.30), rgba(0, 176, 255, 0.5));
             box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
             transform: translateY(-1px);
         }
@@ -644,7 +659,7 @@
 
         .quick-link-btn {
             background: transparent;
-            border: 1px dashed rgba(0, 229, 255, 0.35);
+            border: 1px dashed rgba(95, 168, 211, 0.30);
             color: var(--accent-cyan);
             padding: 3px 9px;
             border-radius: 4px;
@@ -655,7 +670,7 @@
         }
 
         .quick-link-btn:hover {
-            background: rgba(0, 229, 255, 0.15);
+            background: rgba(95, 168, 211, 0.15);
             border-color: var(--accent-cyan);
             color: #ffffff;
         }
@@ -742,22 +757,25 @@
         }
 
         .btn-submit {
-            height: 46px;
-            padding: 0 20px;
-            background: linear-gradient(135deg, #00b0ff, #0081cb);
-            border: none;
-            border-radius: 6px;
-            color: #ffffff;
+            background: #1c2b38;
+            border: 1px solid #33485d;
+            color: #bcd4e6;
             font-family: var(--font-display);
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 700;
             letter-spacing: 0.5px;
+            padding: 0 16px;
+            border-radius: 4px;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: all 0.2s;
-            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        .btn-submit:hover {
+            background: #253849;
+            border-color: var(--accent-cyan);
+            color: #ffffff;
         }
 
         .btn-submit:hover:not(:disabled) {
@@ -828,7 +846,7 @@
         .tab-btn.active {
             color: var(--accent-cyan);
             background: rgba(0, 229, 255, 0.1);
-            border: 1px solid rgba(0, 229, 255, 0.25);
+            border: 1px solid rgba(95, 168, 211, 0.15);
         }
 
         .side-content {
@@ -894,9 +912,9 @@
             letter-spacing: 0.5px;
             font-family: var(--font-mono);
         }
-        .badge-platform.airborne { background: rgba(0, 229, 255, 0.15); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.4); }
-        .badge-platform.naval { background: rgba(68, 138, 255, 0.15); color: #448aff; border: 1px solid rgba(68, 138, 255, 0.4); }
-        .badge-platform.land_mobile { background: rgba(255, 171, 0, 0.15); color: #ffab00; border: 1px solid rgba(255, 171, 0, 0.4); }
+        .badge-platform.airborne { background: rgba(95, 168, 211, 0.15); color: var(--accent-cyan); border: 1px solid rgba(0, 229, 255, 0.4); }
+        .badge-platform.naval { background: rgba(68, 138, 255, 0.15); color: var(--accent-cyan); border: 1px solid rgba(68, 138, 255, 0.4); }
+        .badge-platform.land_mobile { background: rgba(255, 171, 0, 0.15); color: var(--accent-amber); border: 1px solid rgba(255, 171, 0, 0.4); }
         .badge-platform.fixed_site { background: rgba(158, 158, 158, 0.15); color: #b0bec5; border: 1px solid rgba(158, 158, 158, 0.4); }
 
         .emitter-card-details {
@@ -1064,46 +1082,46 @@
 
             <!-- Quick Suggestion Chips -->
             <div class="quick-prompts-deck">
-                <button class="chip-btn" style="border-color:#00e5ff; color:#00e5ff; font-weight:700;" onclick="sendQuickPrompt('VHF bandındaki düşman muhabere telsizlerini ve kriptolu ağları listele.')">
+                <button class="chip-btn" onclick="sendQuickPrompt('VHF bandındaki düşman muhabere telsizlerini ve kriptolu ağları listele.')">
                     📻 VHF Düşman Telsizleri & Kripto
                 </button>
-                <button class="chip-btn" style="border-color:#ff1744; color:#ff1744; font-weight:700;" onclick="sendQuickPrompt('Gayda ve Gürültü karıştırması uygulayan düşman telsiz yayınlarını getir.')">
+                <button class="chip-btn" onclick="sendQuickPrompt('Gayda ve Gürültü karıştırması uygulayan düşman telsiz yayınlarını getir.')">
                     🔊 Gayda / Gürültü Karıştırmaları
                 </button>
-                <button class="chip-btn" style="border-color:#b388ff; color:#b388ff; font-weight:700;" onclick="sendQuickPrompt('VOLGA çağrı adlı telsiz istasyonunun haberleşme ağını ve karşı istasyonlarını analiz et.')">
+                <button class="chip-btn" onclick="sendQuickPrompt('VOLGA çağrı adlı telsiz istasyonunun haberleşme ağını ve karşı istasyonlarını analiz et.')">
                     🌐 VOLGA Telsiz Ağı Link Analizi
                 </button>
-                <button class="chip-btn" style="border-color:#ffb300; color:#ffb300; font-weight:700;" onclick="sendQuickPrompt('Darbe patlama (burst transmission) şeklinde yayın yapan istihbari telsiz hedeflerini göster.')">
+                <button class="chip-btn" onclick="sendQuickPrompt('Darbe patlama (burst transmission) şeklinde yayın yapan istihbari telsiz hedeflerini göster.')">
                     ⚡ Darbe Patlama (Burst) Yayınları
                 </button>
-                <button class="chip-btn" style="border-color:#ff007f; color:#ff4081; font-weight:700;" onclick="sendQuickPrompt('Taktik sahadaki radar yayınlarının zaman ve frekansa göre saçılım / aktivite yoğunluk grafiğini (Scatter) çiz, platform ve tehdit durumunu incele.')">
+                <button class="chip-btn" onclick="sendQuickPrompt('Taktik sahadaki radar yayınlarının zaman ve frekansa göre saçılım / aktivite yoğunluk grafiğini (Scatter) çiz, platform ve tehdit durumunu incele.')">
                     🌊 Grafik: Zaman-Frekans Yoğunluk
                 </button>
-                <button class="chip-btn" style="border-color:#00e5ff; color:#00e5ff; font-weight:700;" onclick="sendQuickPrompt('Havadaki (AIRBORNE) aktif radar tehditlerini listele, tehdit seviyelerini ve radar tiplerini analiz et.')">
+                <button class="chip-btn" onclick="sendQuickPrompt('Havadaki (AIRBORNE) aktif radar tehditlerini listele, tehdit seviyelerini ve radar tiplerini analiz et.')">
                     ✈️ Havadaki Radarlar (AIRBORNE)
                 </button>
-                <button class="chip-btn" style="border-color:#ffab00; color:#ffab00; font-weight:700;" onclick="sendQuickPrompt('Sahada S-400 bataryası veya Tomb Stone radarı tespit edildi mi? Kestirim detaylarını ver.')">
+                <button class="chip-btn" onclick="sendQuickPrompt('Sahada S-400 bataryası veya Tomb Stone radarı tespit edildi mi? Kestirim detaylarını ver.')">
                     🚀 S-400 / Batarya Tespiti
                 </button>
-                <button class="chip-btn" style="border-color:var(--accent-cyan); color:var(--accent-cyan);" onclick="sendQuickPrompt('Cari taktik sahadaki radar tehditlerinin frekans bandı dağılımını pasta / doughnut grafik olarak çiz.')">
+                <button class="chip-btn" onclick="sendQuickPrompt('Cari taktik sahadaki radar tehditlerinin frekans bandı dağılımını pasta / doughnut grafik olarak çiz.')">
                     🍩 Grafik: Bant Dağılımı
                 </button>
-                <button class="chip-btn" style="border-color:var(--accent-red); color:var(--accent-red);" onclick="sendQuickPrompt('En kritik atış kontrol radarlarını ve öncelikli tehditleri (Top-15) listele, hata paylarını çubuk grafik ile kıyasla.')">
+                <button class="chip-btn" onclick="sendQuickPrompt('En kritik atış kontrol radarlarını ve öncelikli tehditleri (Top-15) listele, hata paylarını çubuk grafik ile kıyasla.')">
                     🎯 En Kritik 15 Tehdit (Top-K)
                 </button>
-                <button class="chip-btn" style="border-color:var(--accent-amber); color:var(--accent-amber);" onclick="sendQuickPrompt('Tüm sensörlerin topladığı LOB sinyali yük dağılımını ve bant sayılarını incele, karşılaştırma çubuk grafiği çiz.')">
+                <button class="chip-btn" onclick="sendQuickPrompt('Tüm sensörlerin topladığı LOB sinyali yük dağılımını ve bant sayılarını incele, karşılaştırma çubuk grafiği çiz.')">
                     📊 Sensör LOB Yük Dağılımı
                 </button>
-                <button class="chip-btn" style="border-color:var(--accent-green); color:var(--accent-green);" onclick="sendQuickPrompt('Harekât sahasındaki cari taktik durumu 4 ana başlık altında tam askeri brifing olarak özetle.')">
+                <button class="chip-btn" onclick="sendQuickPrompt('Harekât sahasındaki cari taktik durumu 4 ana başlık altında tam askeri brifing olarak özetle.')">
                     🛡️ Tam Operasyonel Brifing (4 Başlık)
                 </button>
-                <button class="chip-btn" style="border-color:var(--accent-purple); color:var(--accent-purple);" onclick="sendQuickPrompt('Aktif X-Band ve Ku-Band atış kontrol radarlarını sayfalı olarak (Sayfa 1, 15 hedef) listele.')">
+                <button class="chip-btn" onclick="sendQuickPrompt('Aktif X-Band ve Ku-Band atış kontrol radarlarını sayfalı olarak (Sayfa 1, 15 hedef) listele.')">
                     📄 Sayfalı X &amp; Ku Radarları (Sayfa 1)
                 </button>
-                <button class="chip-btn" style="border-color:var(--accent-cyan); color:var(--accent-cyan); font-weight:700;" onclick="sendQuickPrompt('bana sonraki sayfayı da ver')">
+                <button class="chip-btn" onclick="sendQuickPrompt('bana sonraki sayfayı da ver')">
                     ⏩ "bana sonraki sayfayı da ver"
                 </button>
-                <button class="chip-btn" style="border-color:var(--accent-amber); color:var(--accent-amber);" onclick="sendQuickPrompt('Önceki sayfaya dön')">
+                <button class="chip-btn" onclick="sendQuickPrompt('Önceki sayfaya dön')">
                     ⏪ "Önceki sayfaya dön"
                 </button>
                 <button class="chip-btn" onclick="sendQuickPrompt('Hata elipsi 4000 metreden büyük olan düşük doğruluklu ve şüpheli kestirimleri analiz et.')">
@@ -1448,7 +1466,7 @@
                         </div>
                         <span class="badge-status ${tCls}">${c.teshisKimlik || 'BİLİNMEYEN'}</span>
                     </div>
-                    <div style="font-family:var(--font-display); font-size:12px; font-weight:700; color:#00e5ff; margin-top:2px;">
+                    <div style="font-family:var(--font-display); font-size:12px; font-weight:700; color:var(--accent-cyan); margin-top:2px;">
                         ${habIcon} ${c.cagriAdi || 'Telsiz'} ➔ ${c.karsiCagriAdi || 'Karşı İstasyon'}
                     </div>
                     <div class="emitter-card-details">
@@ -1776,8 +1794,8 @@
             ];
 
             const borderColors = [
-                '#00e5ff', '#00e676', '#ffb300', '#ff1744',
-                '#b388ff', '#2979ff', '#ff6e40', '#00bcd4'
+                'var(--accent-cyan)', 'var(--accent-green)', 'var(--accent-amber)', 'var(--accent-red)',
+                'var(--accent-purple)', 'var(--accent-cyan)', '#ff6e40', '#00bcd4'
             ];
 
             const isScatter = (config.type === 'scatter' || config.type === 'bubble');
@@ -1803,10 +1821,10 @@
                         ds.pointBorderColor = function(context) {
                             const raw = context.raw;
                             if (raw && raw.threatLevel) {
-                                if (raw.threatLevel >= 5) return '#ff1744';
-                                if (raw.threatLevel === 4) return '#ff5252';
-                                if (raw.threatLevel === 3) return '#ffb300';
-                                return '#00e5ff';
+                                if (raw.threatLevel >= 5) return 'var(--accent-red)';
+                                if (raw.threatLevel === 4) return 'var(--accent-red)';
+                                if (raw.threatLevel === 3) return 'var(--accent-amber)';
+                                return 'var(--accent-cyan)';
                             }
                             return ds.borderColor || borderColors[idx % borderColors.length];
                         };
@@ -1843,7 +1861,7 @@
                         if (config.type === 'radar') {
                             ds.fill = true;
                             if (typeof ds.backgroundColor === 'string' && !ds.backgroundColor.includes('0.')) {
-                                ds.backgroundColor = 'rgba(0, 229, 255, 0.25)';
+                                ds.backgroundColor = 'rgba(95, 168, 211, 0.15)';
                             }
                         }
                     }
@@ -1870,9 +1888,9 @@
                     },
                     tooltip: {
                         backgroundColor: '#0c121b',
-                        borderColor: '#00e5ff',
+                        borderColor: 'var(--accent-cyan)',
                         borderWidth: 1,
-                        titleColor: '#00e5ff',
+                        titleColor: 'var(--accent-cyan)',
                         titleFont: { family: 'Chakra Petch', size: 12, weight: '700' },
                         bodyColor: '#e2e8f0',
                         bodyFont: { family: 'JetBrains Mono', size: 11 },
@@ -1929,7 +1947,7 @@
                 defaultOptions.scales = {
                     r: {
                         ticks: { color: '#8496ad', backdropColor: 'transparent', font: { size: 9 } },
-                        grid: { color: 'rgba(0, 229, 255, 0.15)' },
+                        grid: { color: 'rgba(95, 168, 211, 0.15)' },
                         angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
                         pointLabels: { color: '#cbd5e1', font: { family: 'Chakra Petch', size: 11, weight: '600' } }
                     }
@@ -1992,7 +2010,7 @@
         .modal-card {
             background: #0e141d;
             border: 1px solid var(--accent-cyan);
-            box-shadow: 0 0 35px rgba(0, 229, 255, 0.25);
+            box-shadow: 0 0 35px rgba(95, 168, 211, 0.15);
             border-radius: 8px;
             width: 950px;
             max-width: 96vw;
