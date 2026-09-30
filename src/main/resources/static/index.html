@@ -62,6 +62,88 @@
             overflow: hidden;
         }
 
+        
+        /* View Mode Switcher Buttons */
+        .view-mode-btn {
+            background: #131a24;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-family: var(--font-display);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .view-mode-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--text-main);
+        }
+        .view-mode-btn.active {
+            background: #1c2b38;
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        /* Map Section */
+        .map-section {
+            flex: 1;
+            position: relative;
+            background: #0a0e14;
+            overflow: hidden;
+            display: none;
+        }
+        #tactical-map {
+            width: 100%;
+            height: 100%;
+            background: #0a0e14;
+        }
+        .map-overlay-controls {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 1000;
+            display: flex;
+            gap: 6px;
+            background: rgba(14, 20, 29, 0.85);
+            backdrop-filter: blur(6px);
+            padding: 6px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+        }
+        .map-btn {
+            background: #17212e;
+            border: 1px solid var(--border-dim);
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .map-btn:hover, .map-btn.active {
+            background: #1e2a3a;
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+        .leaflet-container {
+            background: #0a0e14 !important;
+            font-family: var(--font-mono) !important;
+        }
+        .leaflet-popup-content-wrapper {
+            background: #131a24 !important;
+            color: #cbd5e1 !important;
+            border: 1px solid #2b394d !important;
+            border-radius: 4px !important;
+            font-family: var(--font-mono) !important;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
+        }
+        .leaflet-popup-tip {
+            background: #131a24 !important;
+        }
+
         /* Top Command Header */
         header {
             height: 54px;
@@ -999,6 +1081,9 @@
             100% { transform: rotate(360deg); }
         }
     </style>
+    <!-- Leaflet GIS Tactical Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -1013,6 +1098,11 @@
                 <span>TAKTİK ELEKTRONİK HARP ANALİZ TERMİNALİ</span>
                 <span class="sub">// GEMINI &amp; SPRING AI (SOHBET MODU)</span>
             </div>
+                <div class="view-mode-selector" style="display:flex; gap:6px; margin-left:14px;">
+            <button class="view-mode-btn active" id="btn-view-chat" onclick="switchViewMode('chat')">💬 SOHBET</button>
+            <button class="view-mode-btn" id="btn-view-split" onclick="switchViewMode('split')">◫ ÇİFT EKRAN</button>
+            <button class="view-mode-btn" id="btn-view-map" onclick="switchViewMode('map')">🗺️ HARİTA (COP)</button>
+        </div>
         </div>
 
         <div class="header-kpi-bar" id="kpi-bar">
@@ -1164,6 +1254,18 @@
 
         </section>
 
+        <!-- Tactical GIS Map Section (Leaflet COP) -->
+        <section class="map-section" id="map-section">
+            <div id="tactical-map"></div>
+            <div class="map-overlay-controls">
+                <button class="map-btn active" id="btn-toggle-radars" onclick="toggleMapLayer('radars', this)">📡 Radarlar</button>
+                <button class="map-btn active" id="btn-toggle-comints" onclick="toggleMapLayer('comints', this)">📻 Muhabere</button>
+                <button class="map-btn active" id="btn-toggle-ellipses" onclick="toggleMapLayer('ellipses', this)">⭕ Elipsler</button>
+                <button class="map-btn active" id="btn-toggle-bearings" onclick="toggleMapLayer('bearings', this)">↗️ Kerteriz</button>
+                <button class="map-btn" onclick="fitTacticalMap()">🎯 Odakla</button>
+            </div>
+        </section>
+
         <!-- Right Side: Telemetry Stream & Radar Inventory (30%) -->
         <aside class="side-section">
             <div class="side-tabs">
@@ -1239,6 +1341,210 @@
     </div>
 
     <script>
+        
+        // --- TAKTİK HARİTA (LEAFLET COP) YÖNETİMİ ---
+        let tacticalMap = null;
+        let mapLayers = {
+            radars: null,
+            comints: null,
+            ellipses: null,
+            bearings: null,
+            aiQueried: null
+        };
+        let layerVisibility = {
+            radars: true,
+            comints: true,
+            ellipses: true,
+            bearings: true
+        };
+        let currentViewMode = 'chat';
+
+        function switchViewMode(mode) {
+            currentViewMode = mode;
+            document.querySelectorAll('.view-mode-btn').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById(`btn-view-${mode}`);
+            if (btn) btn.classList.add('active');
+
+            const chatSec = document.querySelector('.chat-section');
+            const mapSec = document.getElementById('map-section');
+
+            if (mode === 'chat') {
+                chatSec.style.display = 'flex';
+                chatSec.style.flex = '1';
+                mapSec.style.display = 'none';
+            } else if (mode === 'map') {
+                chatSec.style.display = 'none';
+                mapSec.style.display = 'flex';
+                mapSec.style.flex = '1';
+                initTacticalMap();
+                setTimeout(() => { if (tacticalMap) tacticalMap.invalidateSize(); }, 200);
+            } else if (mode === 'split') {
+                chatSec.style.display = 'flex';
+                chatSec.style.flex = '1';
+                mapSec.style.display = 'flex';
+                mapSec.style.flex = '1';
+                initTacticalMap();
+                setTimeout(() => { if (tacticalMap) tacticalMap.invalidateSize(); }, 200);
+            }
+        }
+
+        function initTacticalMap() {
+            if (tacticalMap) return;
+
+            tacticalMap = L.map('tactical-map', {
+                center: [38.5, 30.0],
+                zoom: 6,
+                zoomControl: true
+            });
+
+            // CartoDB Dark Matter (Muted Stealth Tactical Tiles)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 18,
+                attribution: '© OpenStreetMap, © CARTO'
+            }).addTo(tacticalMap);
+
+            mapLayers.radars = L.layerGroup().addTo(tacticalMap);
+            mapLayers.comints = L.layerGroup().addTo(tacticalMap);
+            mapLayers.ellipses = L.layerGroup().addTo(tacticalMap);
+            mapLayers.bearings = L.layerGroup().addTo(tacticalMap);
+            mapLayers.aiQueried = L.layerGroup().addTo(tacticalMap);
+
+            loadCopGeoJson();
+        }
+
+        async function loadCopGeoJson() {
+            try {
+                const res = await fetch('/api/v1/tactical/cop/geojson');
+                if (!res.ok) return;
+                const geoJson = await res.json();
+                renderGeoJsonOnMap(geoJson);
+            } catch (err) {
+                console.warn("COP GeoJSON yüklenemedi:", err);
+            }
+        }
+
+        function renderGeoJsonOnMap(geoJson) {
+            if (!geoJson || !geoJson.features) return;
+
+            mapLayers.radars.clearLayers();
+            mapLayers.comints.clearLayers();
+            mapLayers.ellipses.clearLayers();
+            mapLayers.bearings.clearLayers();
+
+            const allLatLngs = [];
+
+            geoJson.features.forEach(f => {
+                const props = f.properties || {};
+                const geom = f.geometry || {};
+                const layerType = props.layerType;
+
+                if (layerType === 'EMISSION_TARGET') {
+                    const lat = geom.coordinates[1];
+                    const lon = geom.coordinates[0];
+                    allLatLngs.push([lat, lon]);
+
+                    let color = '#52b788'; // Dost
+                    if (props.teshisKimlik === 'DUSMAN') color = '#c95d63';
+                    else if (props.teshisKimlik === 'MUHTEMEL_DUSMAN' || props.taciz) color = '#d4a373';
+
+                    const marker = L.circleMarker([lat, lon], {
+                        radius: 6,
+                        fillColor: color,
+                        color: '#0a0e14',
+                        weight: 1.5,
+                        opacity: 1,
+                        fillOpacity: 0.85
+                    });
+
+                    marker.bindPopup(`
+                        <div style="font-size:11px;">
+                            <div style="color:${color}; font-weight:700; margin-bottom:2px;">🎯 ${props.radarAdi || props.emissionId}</div>
+                            <div>Teşhis: <b>${props.teshisKimlik || '-'}</b></div>
+                            <div>Frekans: ${props.minFrekansMhz || '-'} - ${props.maxFrekansMhz || '-'} MHz</div>
+                            <div>HSS: ${props.hss || 'Yok'} | Konum: ${props.hedefYerBilgisi || ''}</div>
+                            <button onclick="showEmissionDetailModal('${props.emissionId}')" style="margin-top:6px; background:#1c2b38; border:1px solid #33485d; color:#5fa8d3; padding:3px 8px; border-radius:3px; cursor:pointer; font-size:10px;">🔍 37 Parametre İncele</button>
+                        </div>
+                    `);
+                    mapLayers.radars.addLayer(marker);
+
+                } else if (layerType === 'COMINT_TARGET') {
+                    const lat = geom.coordinates[1];
+                    const lon = geom.coordinates[0];
+                    allLatLngs.push([lat, lon]);
+
+                    let color = '#5fa8d3'; // VHF/Normal
+                    if (props.teshisKimlik === 'DUSMAN') color = '#c95d63';
+                    else if (props.haberlesmeSekli === 'KRIPTO') color = '#9d8ec2';
+
+                    const marker = L.circleMarker([lat, lon], {
+                        radius: 5,
+                        fillColor: color,
+                        color: '#0a0e14',
+                        weight: 1.5,
+                        opacity: 1,
+                        fillOpacity: 0.85
+                    });
+
+                    marker.bindPopup(`
+                        <div style="font-size:11px;">
+                            <div style="color:${color}; font-weight:700; margin-bottom:2px;">📻 ${props.cagriAdi || props.comintId} ➔ ${props.karsiCagriAdi || ''}</div>
+                            <div>Lisan: <b>${props.lisan || '-'}</b> | Tip: ${props.tip || 'VHF'}</div>
+                            <div>Haberleşme: <b>${props.haberlesmeSekli || '-'}</b> (${props.modulasyon || ''})</div>
+                            <div>Frekans: ${props.minFrekansMhz ? props.minFrekansMhz.toFixed(2) : ''} MHz</div>
+                            <button onclick="showComintDetailModal('${props.comintId}')" style="margin-top:6px; background:#1c2b38; border:1px solid #33485d; color:#5fa8d3; padding:3px 8px; border-radius:3px; cursor:pointer; font-size:10px;">🔍 30 Parametre İncele</button>
+                        </div>
+                    `);
+                    mapLayers.comints.addLayer(marker);
+
+                } else if (layerType === 'ERROR_ELLIPSE' || layerType === 'COMINT_ERROR_ELLIPSE') {
+                    const coords = geom.coordinates[0].map(pt => [pt[1], pt[0]]);
+                    let color = (props.teshisKimlik === 'DUSMAN') ? '#c95d63' : '#5fa8d3';
+
+                    const poly = L.polygon(coords, {
+                        color: color,
+                        weight: 1,
+                        opacity: 0.5,
+                        fillColor: color,
+                        fillOpacity: 0.08,
+                        dashArray: '3, 4'
+                    });
+                    mapLayers.ellipses.addLayer(poly);
+
+                } else if (layerType === 'BEARING_RAY' || layerType === 'COMINT_BEARING_RAY') {
+                    const coords = geom.coordinates.map(pt => [pt[1], pt[0]]);
+                    const line = L.polyline(coords, {
+                        color: '#5c6c7f',
+                        weight: 1,
+                        opacity: 0.45,
+                        dashArray: '4, 4'
+                    });
+                    mapLayers.bearings.addLayer(line);
+                }
+            });
+
+            if (allLatLngs.length > 0 && tacticalMap) {
+                tacticalMap.fitBounds(allLatLngs, { padding: [30, 30] });
+            }
+        }
+
+        function toggleMapLayer(layerName, btn) {
+            layerVisibility[layerName] = !layerVisibility[layerName];
+            if (btn) btn.classList.toggle('active', layerVisibility[layerName]);
+
+            if (mapLayers[layerName]) {
+                if (layerVisibility[layerName]) {
+                    tacticalMap.addLayer(mapLayers[layerName]);
+                } else {
+                    tacticalMap.removeLayer(mapLayers[layerName]);
+                }
+            }
+        }
+
+        function fitTacticalMap() {
+            if (!tacticalMap) return;
+            tacticalMap.setView([38.5, 30.0], 6);
+        }
+
         let allRadarData = [];
         let allComintData = [];
         let currentFilter = 'ALL';

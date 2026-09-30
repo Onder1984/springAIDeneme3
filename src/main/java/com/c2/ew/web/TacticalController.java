@@ -6,6 +6,7 @@ import com.c2.ew.agent.dto.TacticalEmissionDetailDto;
 import com.c2.ew.agent.dto.TacticalEmissionSummaryDto;
 import com.c2.ew.agent.dto.TacticalQueryRequest;
 import com.c2.ew.agent.dto.TacticalResponseDto;
+import com.c2.ew.agent.geojson.TacticalGeoJsonBuilder;
 import com.c2.ew.agent.service.TacticalAgentService;
 import com.c2.ew.agent.tools.ComintEmissionTools;
 import com.c2.ew.agent.tools.RadarEmissionTools;
@@ -24,20 +25,31 @@ public class TacticalController {
     private final TacticalAgentService agentService;
     private final RadarEmissionTools emissionTools;
     private final ComintEmissionTools comintTools;
+    private final TacticalGeoJsonBuilder geoJsonBuilder;
 
     public TacticalController(
         TacticalAgentService agentService,
         RadarEmissionTools emissionTools,
-        ComintEmissionTools comintTools
+        ComintEmissionTools comintTools,
+        TacticalGeoJsonBuilder geoJsonBuilder
     ) {
         this.agentService = agentService;
         this.emissionTools = emissionTools;
         this.comintTools = comintTools;
+        this.geoJsonBuilder = geoJsonBuilder;
     }
 
     @PostMapping("/analyze")
     public ResponseEntity<TacticalResponseDto> analyze(@RequestBody(required = false) TacticalQueryRequest request) {
         return ResponseEntity.ok(agentService.processTacticalQuery(request));
+    }
+
+    // --- MÜŞTEREK TAKTİK HARİTA (COP) GEOJSON ---
+    @GetMapping("/cop/geojson")
+    public ResponseEntity<Map<String, Object>> getCommonOperationalPictureGeoJson() {
+        var radars = emissionTools.queryEmissionsPaged(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1, 200);
+        var comints = comintTools.queryComintEmissionsPaged(null, null, null, null, null, null, null, null, null, null, null, null, null, 1, 200);
+        return ResponseEntity.ok(geoJsonBuilder.buildUnifiedFeatureCollection(radars.items(), comints.items()));
     }
 
     // --- RADAR / ELINT ENDPOINTS ---
