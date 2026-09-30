@@ -1,36 +1,44 @@
 package com.c2.ew.agent.tools;
 
 import com.c2.ew.agent.dto.PaginationMetadata;
-import com.c2.ew.domain.model.EmitterActivity;
-import com.c2.ew.domain.model.EmitterFix;
-import com.c2.ew.domain.model.EmitterLob;
+import com.c2.ew.agent.dto.TacticalEmissionDetailDto;
+import com.c2.ew.agent.dto.TacticalEmissionSummaryDto;
+import com.c2.ew.domain.enums.*;
+import com.c2.ew.domain.model.AtpEntry;
+import com.c2.ew.domain.model.FrequencyEntry;
 import com.c2.ew.domain.model.PagedResult;
-import com.c2.ew.infrastructure.repository.TacticalEmissionRepository;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.c2.ew.domain.model.PriEntry;
+import com.c2.ew.domain.model.PwEntry;
+import com.c2.ew.infrastructure.entity.TacticalEmissionEntity;
+import com.c2.ew.infrastructure.repository.TacticalEmissionJpaRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.criteria.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
-/**
- * Spring AI Taktik Elektronik Harp Araç Kataloğu (Tool Specification)
- * Büyük Veri, SQL Agregasyonları ve Akıllı Sayfa Geçişi (Next-Page) Desteği
- */
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 @Component
 public class RadarEmissionTools {
 
     private static final Logger log = LoggerFactory.getLogger(RadarEmissionTools.class);
 
     private static final ThreadLocal<List<String>> CALL_LOGS = ThreadLocal.withInitial(ArrayList::new);
-    private static final ThreadLocal<Map<String, EmitterFix>> QUERIED_FIXES = ThreadLocal.withInitial(LinkedHashMap::new);
-    private static final ThreadLocal<Map<String, EmitterLob>> QUERIED_LOBS = ThreadLocal.withInitial(LinkedHashMap::new);
+    private static final ThreadLocal<Map<String, TacticalEmissionSummaryDto>> QUERIED_EMISSIONS = ThreadLocal.withInitial(LinkedHashMap::new);
 
-    // Oturum Bazlı Sayfalama Hafızası (Session Pagination State - Thread & Request Safe)
-    private static final Map<String, ActivePaginationState> SESSION_STATES = new java.util.concurrent.ConcurrentHashMap<>();
+    // Oturum Bazlı Sayfalama Hafızası (Session Pagination State)
+    private static final Map<String, ActivePaginationState> SESSION_STATES = new ConcurrentHashMap<>();
     private static final ThreadLocal<String> CURRENT_CONVERSATION_ID = ThreadLocal.withInitial(() -> "c2-tactical-session");
 
     public static void setCurrentConversationId(String conversationId) {
@@ -48,347 +56,604 @@ public class RadarEmissionTools {
     }
 
     public static class ActivePaginationState {
-        public String lastBand;
-        public EmitterActivity lastStatus;
-        public Integer lastMinThreat;
-        public String lastRadarType;
-        public String lastPlatformType;
-        public int lastFixPage = -1;
-        public int fixPageSize = 15;
-        public long fixTotalCount = 0;
-        public int fixTotalPages = 0;
-        public boolean fixHasMore = false;
+        public String lastTeshis;
+        public String lastVeriKaynagi;
+        public String lastRadarAdi;
+        public String lastHss;
+        public Boolean lastTaciz;
+        public String lastEtUygulamaDurumu;
+        public String lastPlatformOrtami;
+        public Double lastMinFrekansMhz;
+        public Double lastMaxFrekansMhz;
+        public String lastFrekansTipi;
+        public Double lastMinPriMicroSec;
+        public Double lastMaxPriMicroSec;
+        public Double lastMinPwMicroSec;
+        public Double lastMaxPwMicroSec;
+        public Double lastMinAtpMicroSec;
+        public Double lastMaxAtpMicroSec;
 
-        public String lastLobSensor;
-        public String lastLobBand;
-        public String lastLobAssociation = "ALL";
-        public boolean lastLobUnassociated = false;
-        public int lastLobPage = -1;
-        public int lobPageSize = 20;
-        public long lobTotalCount = 0;
-        public int lobTotalPages = 0;
-        public boolean lobHasMore = false;
-
-        public String lastTargetType; // "FIX" or "LOB"
+        public int lastEmissionPage = -1;
+        public int emissionPageSize = 15;
+        public long emissionTotalCount = 0;
+        public int emissionTotalPages = 0;
+        public boolean emissionHasMore = false;
     }
 
-    private final TacticalEmissionRepository repository;
-
-    public RadarEmissionTools(TacticalEmissionRepository repository) {
-        this.repository = repository;
-    }
-
-    public static void clearSession() {
+    public static List<String> drainCallLogs() {
+        List<String> logs = new ArrayList<>(CALL_LOGS.get());
         CALL_LOGS.get().clear();
-        QUERIED_FIXES.get().clear();
-        QUERIED_LOBS.get().clear();
+        return logs;
     }
 
-    public static List<String> getCapturedLogs() {
-        return new ArrayList<>(CALL_LOGS.get());
+    public static List<TacticalEmissionSummaryDto> drainQueriedEmissions() {
+        List<TacticalEmissionSummaryDto> list = new ArrayList<>(QUERIED_EMISSIONS.get().values());
+        QUERIED_EMISSIONS.get().clear();
+        return list;
     }
 
-    public static Map<String, EmitterFix> getCapturedFixes() {
-        return new LinkedHashMap<>(QUERIED_FIXES.get());
-    }
-
-    public static Map<String, EmitterLob> getCapturedLobs() {
-        return new LinkedHashMap<>(QUERIED_LOBS.get());
-    }
-
-    public static PaginationMetadata getLastPaginationMetadata() {
+    public static PaginationMetadata getPaginationMetadata() {
         ActivePaginationState state = getActiveState();
-        if ("FIX".equals(state.lastTargetType) && state.fixHasMore) {
-            String filterDesc = (state.lastPlatformType != null ? state.lastPlatformType + " " : "") +
-                                (state.lastRadarType != null ? state.lastRadarType + " " : "") +
-                                (state.lastBand != null ? state.lastBand + "-Band " : "") +
-                                (state.lastStatus != null ? state.lastStatus.name() + " " : "") + "radarlarının";
-            String prompt = String.format("%s %d. sayfasını (Sayfa %d/%d) listele.",
-                filterDesc.isBlank() ? "Önceki hedeflerin" : filterDesc,
-                state.lastFixPage + 2, state.lastFixPage + 2, state.fixTotalPages);
-
-            return new PaginationMetadata(true, state.lastFixPage, state.fixTotalPages, state.fixTotalCount, state.fixPageSize, "FIX", prompt);
-        } else if ("LOB".equals(state.lastTargetType) && state.lobHasMore) {
-            String assocDesc = "";
-            if (state.lastLobAssociation != null) {
-                String norm = state.lastLobAssociation.toUpperCase();
-                if (norm.contains("UNASSOC") || norm.contains("YETIM") || norm.contains("ORPHAN")) {
-                    assocDesc = "yetim (ilişkilendirilmemiş) ";
-                } else if (norm.contains("ASSOC") || norm.contains("ILISKI") || norm.contains("İLİŞKİ")) {
-                    assocDesc = "kestirimlerle ilişkilendirilmiş ";
-                }
-            }
-            String filterDesc = assocDesc +
-                                (state.lastLobSensor != null ? state.lastLobSensor + " sensörünün " : "") +
-                                (state.lastLobBand != null ? state.lastLobBand + "-Band " : "") + "LOB sinyallerinin";
-            String prompt = String.format("%s %d. sayfasını (Sayfa %d/%d) listele.",
-                filterDesc.isBlank() ? "Önceki LOB sinyallerinin" : filterDesc,
-                state.lastLobPage + 2, state.lastLobPage + 2, state.lobTotalPages);
-
-            return new PaginationMetadata(true, state.lastLobPage, state.lobTotalPages, state.lobTotalCount, state.lobPageSize, "LOB", prompt);
+        if (state.lastEmissionPage < 0 || state.emissionTotalCount == 0) {
+            return null;
         }
-        return null;
+        return new PaginationMetadata(
+            state.emissionHasMore,
+            state.lastEmissionPage,
+            state.emissionTotalPages,
+            state.emissionTotalCount,
+            state.emissionPageSize,
+            "EMISSIONS",
+            state.emissionHasMore ? "Sonraki sayfadaki hedefleri listelemek için 'sonraki sayfayı getir' veya 'devamını göster' diyebilirsiniz." : null
+        );
     }
 
-    private void logTrace(String entry) {
-        log.info(entry);
-        CALL_LOGS.get().add(entry);
+    private final TacticalEmissionJpaRepository emissionRepo;
+    private final ObjectMapper objectMapper;
+
+    public RadarEmissionTools(TacticalEmissionJpaRepository emissionRepo, ObjectMapper objectMapper) {
+        this.emissionRepo = emissionRepo;
+        this.objectMapper = objectMapper;
     }
 
-    @Tool(description = "Taktik harekât sahasındaki tüm yayıncıların ve LOB hatlarının makro istatistiklerini döner: Toplam kestirim sayısı, aktif/suskun/kesikli yayın sayıları, bant dağılımı (fixesByBand), tehdit seviyesi dağılımı, toplam ve sensör bazlı LOB sayıları. Genel durum, özet veya grafik çizimi soruları için EN BİRİNCİL araçtır.")
-    public Map<String, Object> getTacticalSummaryStats() {
-        logTrace("🔍 [GEMINI -> TOOL CALL] getTacticalSummaryStats()");
-        Map<String, Object> stats = repository.getOperationalStatistics();
-        logTrace(String.format("⚡ [TOOL RESULT -> GEMINI] Makro İstatistikler: Toplam Fix=%s, Aktif=%s, Toplam LOB=%s",
-            stats.get("totalFixes"), stats.get("activeFixes"), stats.get("totalLobs")));
-        return stats;
-    }
-
-    @Tool(description = "En kritik taktik tehditleri (tehdit seviyesi 1-5 ve son görülme zamanına göre önceliklendirilmiş) listeler. LLM bağlamı ve token tasarrufu için varsayılan olarak en kritik ilk 15 (azami 30) hedefi çeker. 'Kritik radarları listele', 'En tehlikeli hedefler neler?', 'Öncelikli tehditler' soruları için kullanılır.")
-    public List<EmitterFix> queryPriorityEmitters(Integer limit) {
-        int safeLimit = (limit != null && limit > 0) ? Math.min(30, limit) : 15;
-        logTrace(String.format("🔍 [GEMINI -> TOOL CALL] queryPriorityEmitters(limit=%d)", safeLimit));
-
-        List<EmitterFix> results = repository.findTopThreats(safeLimit);
-        results.forEach(f -> QUERIED_FIXES.get().put(f.fixId(), f));
-
-        String summary = results.stream()
-            .map(f -> String.format("%s [%s / %s] (%s, %.0fMHz)", f.fixId(), f.radarType(), f.platformType(), f.rfSignature().band(), f.rfSignature().frequencyMhz()))
-            .collect(Collectors.joining("; "));
-
-        logTrace(String.format("⚡ [TOOL RESULT -> GEMINI] %d adet öncelikli hedef iletildi: [%s]", results.size(), summary));
-        return results;
-    }
-
-    public static String cleanParam(String val) {
-        if (val == null || val.isBlank()) return null;
+    private String cleanParam(String val) {
+        if (val == null) return null;
         String trimmed = val.trim();
-        if (trimmed.equals("*") || trimmed.equalsIgnoreCase("ALL") || 
-            trimmed.equalsIgnoreCase("ANY") || trimmed.equalsIgnoreCase("NULL") || 
-            trimmed.equalsIgnoreCase("NONE") || trimmed.equalsIgnoreCase("TÜMÜ") || 
-            trimmed.equalsIgnoreCase("HEPSİ") || trimmed.equalsIgnoreCase("TÜM")) {
+        if (trimmed.isEmpty() ||
+            trimmed.equalsIgnoreCase("ALL") ||
+            trimmed.equalsIgnoreCase("ANY") ||
+            trimmed.equalsIgnoreCase("NULL") ||
+            trimmed.equalsIgnoreCase("NONE") ||
+            trimmed.equalsIgnoreCase("*") ||
+            trimmed.equalsIgnoreCase("TÜMÜ") ||
+            trimmed.equalsIgnoreCase("HEPSİ") ||
+            trimmed.equalsIgnoreCase("TUMU") ||
+            trimmed.equalsIgnoreCase("HEPSI")) {
             return null;
         }
         return trimmed;
     }
 
-    @Tool(description = "Kestirilmiş radar elipslerini (EmitterFix) sayfalı (PagedResult) olarak listeler. " +
-        "Filtreler: " +
-        "- page: 0-tabanlı sayfa numarası. " +
-        "- pageSize: Sayfa başı hedef (varsayılan 15, azami 30). " +
-        "- status: ACTIVE, INTERMITTENT, SILENT (veya null). " +
-        "- band: Frekans bandı ('X', 'S', 'C', 'Ku', 'L'). Kullanıcı açıkça bir bant belirtmedikçe null bırakılmalıdır (asla varsayım yapma veya tek bir bant uydurma). " +
-        "- minThreatLevel: Minimum tehdit seviyesi (1-5). " +
-        "- radarType: Belirli bir radar modeli/adı (örn: 'S-400', 'S-300', 'Sentinel', 'F-16', 'P-18', 'Flycatcher'). Kullanıcı açıkça bir model sormadıkça null bırakılmalıdır (asla '*' verme). " +
-        "- platformType: Platform türü ('AIRBORNE', 'NAVAL', 'LAND_MOBILE', 'FIXED_SITE'). " +
-        "Kullanıcı 'havadaki radarlar' derse platformType='AIRBORNE', 'deniz hedefleri' derse platformType='NAVAL', 'S-400 var mı' derse radarType='S-400' verilmelidir.")
-    public PagedResult<EmitterFix> queryEmitterFixesPaged(
-        Integer page,
-        Integer pageSize,
-        EmitterActivity status,
-        String band,
-        Integer minThreatLevel,
-        String radarType,
-        String platformType
-    ) {
-        int p = (page != null && page >= 0) ? page : 0;
-        int size = (pageSize != null && pageSize > 0) ? Math.min(30, pageSize) : 15;
+    @Tool(description = "Sahadaki tüm taktik radar emisyonlarının makro özet istatistiklerini döner. Teşhis (Dost/Düşman), Veri Kaynağı (Kara/Hava/Deniz/GenKur), Platform Ortamı, Aktif Elektronik Taarruz (ET) ve Taciz sayılarını içerir.")
+    public Map<String, Object> getTacticalMacroStats() {
+        CALL_LOGS.get().add("Tool Çağrısı: getTacticalMacroStats() çalıştırıldı.");
 
-        String cleanBand = cleanParam(band);
-        String cleanRadar = cleanParam(radarType);
-        String cleanPlatform = cleanParam(platformType);
+        long totalCount = emissionRepo.count();
+        long tacizCount = emissionRepo.countByTacizTrue();
+        long etUygulaniyorCount = emissionRepo.countByEtUygulamaDurumu(EtUygulamaDurumu.UYGULANIYOR);
+        long etSusturduCount = emissionRepo.countByEtUygulamaDurumu(EtUygulamaDurumu.SUSTURDU);
 
-        logTrace(String.format("🔍 [GEMINI -> TOOL CALL] queryEmitterFixesPaged(page=%d, size=%d, status=%s, band=%s, minThreat=%s, radar=%s, platform=%s)",
-            p, size, status, cleanBand, minThreatLevel, cleanRadar, cleanPlatform));
+        Map<String, Long> teshisMap = new LinkedHashMap<>();
+        for (Object[] row : emissionRepo.getTeshisDistribution()) {
+            teshisMap.put(String.valueOf(row[0]), (Long) row[1]);
+        }
 
-        PagedResult<EmitterFix> paged = repository.findFixesPaged(p, size, status, cleanBand, minThreatLevel, cleanRadar, cleanPlatform);
-        paged.items().forEach(f -> QUERIED_FIXES.get().put(f.fixId(), f));
+        Map<String, Long> veriKaynagiMap = new LinkedHashMap<>();
+        for (Object[] row : emissionRepo.getVeriKaynagiDistribution()) {
+            veriKaynagiMap.put(String.valueOf(row[0]), (Long) row[1]);
+        }
 
-        // Sayfalama durumunu oturum hafızasına kaydet
-        ActivePaginationState state = getActiveState();
-        state.lastTargetType = "FIX";
-        state.lastBand = cleanBand;
-        state.lastStatus = status;
-        state.lastMinThreat = minThreatLevel;
-        state.lastRadarType = cleanRadar;
-        state.lastPlatformType = cleanPlatform;
-        state.lastFixPage = p;
-        state.fixPageSize = size;
-        state.fixTotalCount = paged.totalCount();
-        state.fixTotalPages = paged.totalPages();
-        state.fixHasMore = paged.hasMore();
-
-        logTrace(String.format("⚡ [TOOL RESULT -> GEMINI] Sayfa %d/%d getirildi. Toplam kayıt: %d, Sonraki Sayfa Var mı?: %s",
-            paged.page() + 1, paged.totalPages(), paged.totalCount(), paged.hasMore()));
-        return paged;
-    }
-
-    @Tool(description = "Önceki radar kestirim sorgusunun (EmitterFix) bir sonraki sayfasını çeker. Kullanıcı 'Sonraki sayfayı ver', 'Devamını göster', 'Bir sonraki sayfayı getir', 'Sıradaki hedefler' dediğinde bu aracı çağır. Önceki filtre kriterlerini (bant, durum vb.) otomatik hatırlar ve bir sonraki sayfayı (page + 1) döner.")
-    public PagedResult<EmitterFix> getNextPageOfFixes() {
-        ActivePaginationState state = getActiveState();
-        int nextPage = state.lastFixPage + 1;
-        int size = state.fixPageSize > 0 ? state.fixPageSize : 15;
-
-        logTrace(String.format("🔍 [GEMINI -> TOOL CALL] getNextPageOfFixes() -> Sayfa %d çağrılıyor (Filtreler: band=%s, status=%s, radar=%s, platform=%s)",
-            nextPage, state.lastBand, state.lastStatus, state.lastRadarType, state.lastPlatformType));
-
-        return queryEmitterFixesPaged(nextPage, size, state.lastStatus, state.lastBand, state.lastMinThreat, state.lastRadarType, state.lastPlatformType);
-    }
-
-    @Tool(description = "Önceki radar kestirim sorgusunun (EmitterFix) bir önceki sayfasını çeker. Kullanıcı 'Önceki sayfaya dön', 'Geri git', 'Bir önceki sayfayı göster' dediğinde bu aracı çağır.")
-    public PagedResult<EmitterFix> getPrevPageOfFixes() {
-        ActivePaginationState state = getActiveState();
-        int prevPage = Math.max(0, state.lastFixPage - 1);
-        int size = state.fixPageSize > 0 ? state.fixPageSize : 15;
-
-        logTrace(String.format("🔍 [GEMINI -> TOOL CALL] getPrevPageOfFixes() -> Sayfa %d çağrılıyor (Filtreler: band=%s, status=%s, radar=%s, platform=%s)",
-            prevPage, state.lastBand, state.lastStatus, state.lastRadarType, state.lastPlatformType));
-
-        return queryEmitterFixesPaged(prevPage, size, state.lastStatus, state.lastBand, state.lastMinThreat, state.lastRadarType, state.lastPlatformType);
-    }
-
-    @Tool(description = "Zaman - Frekans (Time-Frequency Scatter / Waterfall) radar çalışma ve aktivite yoğunluğu verisini döner. " +
-        "Operatör 'zaman frekans grafiği', 'çalışma yoğunluğu grafiği', 'waterfall', 'spektrogram', 'frekans zaman dağılımı' " +
-        "istediğinde KESİNLİKLE bu aracı çağır! " +
-        "Dönen her bir nokta {timeFormatted (HH:mm), frequencyMhz, radarType, platformType, band, threatLevel} içerir. " +
-        "Filtreler: lastHours (varsayılan 24), band (Ku, X, S, C, L veya null), platformType (AIRBORNE, NAVAL, LAND_MOBILE vb.), radarType.")
-    public Map<String, Object> getTimeFrequencyScatterData(
-        Integer lastHours,
-        String band,
-        String platformType,
-        String radarType
-    ) {
-        String cleanBand = cleanParam(band);
-        String cleanPlatform = cleanParam(platformType);
-        String cleanRadar = cleanParam(radarType);
-
-        logTrace(String.format("🔍 [GEMINI -> TOOL CALL] getTimeFrequencyScatterData(hours=%s, band=%s, platform=%s, radar=%s)",
-            lastHours, cleanBand, cleanPlatform, cleanRadar));
-
-        List<Map<String, Object>> points = repository.getTimeFrequencyPoints(lastHours, cleanBand, cleanPlatform, cleanRadar);
+        Map<String, Long> platformMap = new LinkedHashMap<>();
+        for (Object[] row : emissionRepo.getPlatformOrtamiDistribution()) {
+            platformMap.put(String.valueOf(row[0]), (Long) row[1]);
+        }
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("status", "SUCCESS");
-        result.put("totalPoints", points.size());
-        result.put("dataPoints", points);
+        result.put("toplamEmisyonSayisi", totalCount);
+        result.put("tacizYapanHedefSayisi", tacizCount);
+        result.put("aktifEtUygulananSayisi", etUygulaniyorCount);
+        result.put("susturulanHedefSayisi", etSusturduCount);
+        result.put("teshisDagilimi", teshisMap);
+        result.put("veriKaynagiDagilimi", veriKaynagiMap);
+        result.put("platformOrtamiDagilimi", platformMap);
 
-        logTrace(String.format("⚡ [TOOL RESULT -> GEMINI] Zaman-Frekans Saçılım Verisi: %d adet nokta iletildi.", points.size()));
         return result;
     }
 
-    @Tool(description = "Ham LOB yön kestirim sinyallerinin kesin toplam sayısını ve sensör/bant dağılımını döner. associationStatus: 'ALL' (hepsi), 'UNASSOCIATED' (yetim LOB'lar), 'ASSOCIATED' (kestirimlerle ilişkilendirilmiş LOB'lar). Belirli bir sensör veya bant kısıtı yoksa sensorNodeId ve band parametreleri null bırakılmalıdır (asla 'ALL' verilmemeli).")
-    public Map<String, Object> countEmitterLobs(
-        Integer lastMinutes,
-        String associationStatus,
-        String sensorNodeId,
-        String band,
-        Double minFrequencyMhz,
-        Double maxFrequencyMhz
-    ) {
-        String cleanSensor = cleanParam(sensorNodeId);
-        String cleanBand = cleanParam(band);
-        String cleanStatus = cleanParam(associationStatus);
+    @Tool(description = "En kritik öncelikli tehditleri listeler: Teşhisi DÜŞMAN veya MUHTEMEL_DÜŞMAN olan, taciz yapan veya HSS içeren en güncel ilk 15 hedefi döner.")
+    public List<TacticalEmissionSummaryDto> queryPriorityThreats(Integer limit) {
+        int max = (limit == null || limit <= 0) ? 15 : Math.min(limit, 30);
+        CALL_LOGS.get().add("Tool Çağrısı: queryPriorityThreats(limit=" + max + ") çalıştırıldı.");
 
-        logTrace(String.format("🔍 [GEMINI -> TOOL CALL] countEmitterLobs(associationStatus=%s, sensor=%s, band=%s)", cleanStatus, cleanSensor, cleanBand));
-        Map<String, Object> result = repository.countLobs(lastMinutes, cleanStatus, cleanSensor, cleanBand, minFrequencyMhz, maxFrequencyMhz);
-        logTrace(String.format("⚡ [TOOL RESULT -> GEMINI] Toplam LOB: %s, İlişki Durumu: %s", result.get("totalLobs"), cleanStatus != null ? cleanStatus : "ALL"));
-        return result;
+        Specification<TacticalEmissionEntity> spec = (root, query, cb) -> {
+            Predicate isEnemy = root.get("teshisKimlik").in(TeshisKimlik.DUSMAN, TeshisKimlik.MUHTEMEL_DUSMAN);
+            Predicate isTaciz = cb.isTrue(root.get("taciz"));
+            Predicate hasHss = cb.isNotNull(root.get("hss"));
+            return cb.or(isTaciz, cb.and(isEnemy, hasHss));
+        };
+
+        Page<TacticalEmissionEntity> page = emissionRepo.findAll(
+            spec,
+            PageRequest.of(0, max, Sort.by(Sort.Direction.DESC, "sonTespitZamani"))
+        );
+
+        List<TacticalEmissionSummaryDto> dtoList = page.getContent().stream().map(this::toSummaryDto).collect(Collectors.toList());
+        dtoList.forEach(d -> QUERIED_EMISSIONS.get().put(d.id(), d));
+        return dtoList;
     }
 
-    @Tool(description = "Ham LOB (Line of Bearing) yön kestirim sinyallerini sayfalı olarak listeler. associationStatus parametresi: 'ASSOCIATED' (yalnızca kestirimlerle ilişkilendirilmiş olanlar), 'UNASSOCIATED' (yalnızca yetim/ilişkilendirilmemiş açıkta kalan hatlar), veya 'ALL' (hepsi). Kullanıcı 'ilişkilendirilmiş' dediğinde KESİNLİKLE 'ASSOCIATED' seçilmelidir! 'Yetim / ilişkilendirilmemiş' dediğinde 'UNASSOCIATED' seçilmelidir. Kullanıcı belirli bir sensör belirtmedikçe sensorNodeId parametresi KESİNLİKLE null bırakılmalıdır (asla 'ALL' stringi verme). Parametreler: page (0-tabanlı), pageSize (varsayılan 20, azami 50), associationStatus ('ALL', 'UNASSOCIATED', 'ASSOCIATED'), sensorNodeId, band.")
-    public PagedResult<EmitterLob> queryEmitterLobsPaged(
-        Integer page,
-        Integer pageSize,
-        String associationStatus,
-        String sensorNodeId,
-        String band
+    @Tool(description = "Taktik radar emisyonlarını çoklu kriterlerle ve ARALIKLI filtrelerle (Frekans min-max, PRI min-max, PW min-max, ATP min-max, Teşhis, Veri Kaynağı, Radar Adı, HSS, Taciz, ET Durumu) sayfalı olarak sorgular.")
+    public PagedResult<TacticalEmissionSummaryDto> queryEmissionsPaged(
+        String teshisKimlik,
+        String veriKaynagi,
+        String radarAdi,
+        String hss,
+        Boolean taciz,
+        String etUygulamaDurumu,
+        String platformOrtami,
+        Double minFrekansMhz,
+        Double maxFrekansMhz,
+        String frekansTipi,
+        Double minPriMicroSec,
+        Double maxPriMicroSec,
+        Double minPwMicroSec,
+        Double maxPwMicroSec,
+        Double minAtpMicroSec,
+        Double maxAtpMicroSec,
+        Integer sayfaNo,
+        Integer sayfaBoyutu
     ) {
-        int p = (page != null && page >= 0) ? page : 0;
-        int size = (pageSize != null && pageSize > 0) ? Math.min(50, pageSize) : 20;
+        String cleanTeshis = cleanParam(teshisKimlik);
+        String cleanKaynak = cleanParam(veriKaynagi);
+        String cleanRadar = cleanParam(radarAdi);
+        String cleanHss = cleanParam(hss);
+        String cleanEt = cleanParam(etUygulamaDurumu);
+        String cleanPlatform = cleanParam(platformOrtami);
+        String cleanFreqType = cleanParam(frekansTipi);
 
-        String cleanSensor = cleanParam(sensorNodeId);
-        String cleanBand = cleanParam(band);
-        String cleanStatus = cleanParam(associationStatus);
-
-        logTrace(String.format("🔍 [GEMINI -> TOOL CALL] queryEmitterLobsPaged(page=%d, size=%d, associationStatus=%s, sensor=%s, band=%s)",
-            p, size, cleanStatus != null ? cleanStatus : "ALL", cleanSensor, cleanBand));
-
-        PagedResult<EmitterLob> paged = repository.findLobsPaged(p, size, cleanStatus, cleanSensor, cleanBand);
-        paged.items().forEach(l -> QUERIED_LOBS.get().put(l.lobId(), l));
+        // LLM'ler ve kullanıcılar ilk sayfayı genellikle 1 olarak gönderir.
+        int pageIdx = (sayfaNo == null || sayfaNo <= 0) ? 0 : (sayfaNo >= 1 ? sayfaNo - 1 : 0);
+        int size = (sayfaBoyutu == null || sayfaBoyutu <= 0) ? 15 : Math.min(sayfaBoyutu, 50);
 
         ActivePaginationState state = getActiveState();
-        state.lastTargetType = "LOB";
-        state.lastLobAssociation = cleanStatus != null ? cleanStatus : "ALL";
-        state.lastLobUnassociated = "UNASSOCIATED".equalsIgnoreCase(cleanStatus);
-        state.lastLobSensor = cleanSensor;
-        state.lastLobBand = cleanBand;
-        state.lastLobPage = p;
-        state.lobPageSize = size;
-        state.lobTotalCount = paged.totalCount();
-        state.lobTotalPages = paged.totalPages();
-        state.lobHasMore = paged.hasMore();
+        state.lastTeshis = cleanTeshis;
+        state.lastVeriKaynagi = cleanKaynak;
+        state.lastRadarAdi = cleanRadar;
+        state.lastHss = cleanHss;
+        state.lastTaciz = taciz;
+        state.lastEtUygulamaDurumu = cleanEt;
+        state.lastPlatformOrtami = cleanPlatform;
+        state.lastMinFrekansMhz = minFrekansMhz;
+        state.lastMaxFrekansMhz = maxFrekansMhz;
+        state.lastFrekansTipi = cleanFreqType;
+        state.lastMinPriMicroSec = minPriMicroSec;
+        state.lastMaxPriMicroSec = maxPriMicroSec;
+        state.lastMinPwMicroSec = minPwMicroSec;
+        state.lastMaxPwMicroSec = maxPwMicroSec;
+        state.lastMinAtpMicroSec = minAtpMicroSec;
+        state.lastMaxAtpMicroSec = maxAtpMicroSec;
+        state.lastEmissionPage = pageIdx;
+        state.emissionPageSize = size;
 
-        logTrace(String.format("⚡ [TOOL RESULT -> GEMINI] LOB Sayfa %d/%d (Toplam: %d, Sonraki Sayfa Var mı?: %s)",
-            paged.page() + 1, paged.totalPages(), paged.totalCount(), paged.hasMore()));
-        return paged;
+        log.info("queryEmissionsPaged called with teshis={}, freq=[{}-{}], page={}", cleanTeshis, minFrekansMhz, maxFrekansMhz, pageIdx);
+        CALL_LOGS.get().add(String.format("Tool: queryEmissionsPaged(teshis=%s, kaynak=%s, freq=[%s-%s], pri=[%s-%s], taciz=%s, page=%d)",
+            cleanTeshis, cleanKaynak, minFrekansMhz, maxFrekansMhz, minPriMicroSec, maxPriMicroSec, taciz, pageIdx));
+
+        Specification<TacticalEmissionEntity> spec = createSpecification(
+            cleanTeshis, cleanKaynak, cleanRadar, cleanHss, taciz, cleanEt, cleanPlatform,
+            minFrekansMhz, maxFrekansMhz, cleanFreqType,
+            minPriMicroSec, maxPriMicroSec,
+            minPwMicroSec, maxPwMicroSec,
+            minAtpMicroSec, maxAtpMicroSec
+        );
+
+        Page<TacticalEmissionEntity> pageResult = emissionRepo.findAll(
+            spec,
+            PageRequest.of(pageIdx, size, Sort.by(Sort.Direction.DESC, "sonTespitZamani"))
+        );
+
+        state.emissionTotalCount = pageResult.getTotalElements();
+        state.emissionTotalPages = pageResult.getTotalPages();
+        state.emissionHasMore = pageResult.hasNext();
+
+        List<TacticalEmissionSummaryDto> dtos = pageResult.getContent().stream().map(this::toSummaryDto).collect(Collectors.toList());
+        dtos.forEach(d -> QUERIED_EMISSIONS.get().put(d.id(), d));
+
+        String note = String.format("Sayfa %d / %d (Toplam %d hedef)", pageIdx + 1, pageResult.getTotalPages(), pageResult.getTotalElements());
+        return PagedResult.of(dtos, pageIdx, size, pageResult.getTotalElements(), note);
     }
 
-    @Tool(description = "Önceki LOB sinyali sorgusunun bir sonraki sayfasını çeker. Kullanıcı LOB sinyallerinin devamını veya bir sonraki sayfasını istediğinde bu aracı çağır.")
-    public PagedResult<EmitterLob> getNextPageOfLobs() {
+    @Tool(description = "Kullanıcı 'sonraki sayfayı getir', 'sıradakileri göster' veya 'devamını getir' dediğinde önceki arama kriterlerini otomatik hatırlayarak bir sonraki sayfayı (page + 1) çeker.")
+    public PagedResult<TacticalEmissionSummaryDto> getNextPageOfEmissions() {
         ActivePaginationState state = getActiveState();
-        int nextPage = state.lastLobPage + 1;
-        int size = state.lobPageSize > 0 ? state.lobPageSize : 20;
+        int nextPage = state.lastEmissionPage + 1;
+        CALL_LOGS.get().add("Tool Çağrısı: getNextPageOfEmissions() -> Sayfa " + (nextPage + 1) + " isteniyor.");
 
-        logTrace(String.format("🔍 [GEMINI -> TOOL CALL] getNextPageOfLobs() -> LOB Sayfa %d çağrılıyor (AssociationStatus=%s, Sensor=%s, Band=%s)",
-            nextPage, state.lastLobAssociation, state.lastLobSensor, state.lastLobBand));
-
-        return queryEmitterLobsPaged(nextPage, size, state.lastLobAssociation, state.lastLobSensor, state.lastLobBand);
+        return queryEmissionsPaged(
+            state.lastTeshis, state.lastVeriKaynagi, state.lastRadarAdi, state.lastHss, state.lastTaciz,
+            state.lastEtUygulamaDurumu, state.lastPlatformOrtami,
+            state.lastMinFrekansMhz, state.lastMaxFrekansMhz, state.lastFrekansTipi,
+            state.lastMinPriMicroSec, state.lastMaxPriMicroSec,
+            state.lastMinPwMicroSec, state.lastMaxPwMicroSec,
+            state.lastMinAtpMicroSec, state.lastMaxAtpMicroSec,
+            nextPage, state.emissionPageSize
+        );
     }
 
-    @Tool(description = "Önceki LOB sinyali sorgusunun bir önceki sayfasını çeker. Kullanıcı LOB sinyallerinin bir önceki sayfasını istediğinde bu aracı çağır.")
-    public PagedResult<EmitterLob> getPrevPageOfLobs() {
+    @Tool(description = "Kullanıcı 'önceki sayfaya dön' veya 'bir önceki hedefleri göster' dediğinde önceki arama kriterlerini hatırlayarak önceki sayfayı (page - 1) çeker.")
+    public PagedResult<TacticalEmissionSummaryDto> getPrevPageOfEmissions() {
         ActivePaginationState state = getActiveState();
-        int prevPage = Math.max(0, state.lastLobPage - 1);
-        int size = state.lobPageSize > 0 ? state.lobPageSize : 20;
+        int prevPage = Math.max(0, state.lastEmissionPage - 1);
+        CALL_LOGS.get().add("Tool Çağrısı: getPrevPageOfEmissions() -> Sayfa " + (prevPage + 1) + " isteniyor.");
 
-        logTrace(String.format("🔍 [GEMINI -> TOOL CALL] getPrevPageOfLobs() -> LOB Sayfa %d çağrılıyor (AssociationStatus=%s, Sensor=%s, Band=%s)",
-            prevPage, state.lastLobAssociation, state.lastLobSensor, state.lastLobBand));
-
-        return queryEmitterLobsPaged(prevPage, size, state.lastLobAssociation, state.lastLobSensor, state.lastLobBand);
+        return queryEmissionsPaged(
+            state.lastTeshis, state.lastVeriKaynagi, state.lastRadarAdi, state.lastHss, state.lastTaciz,
+            state.lastEtUygulamaDurumu, state.lastPlatformOrtami,
+            state.lastMinFrekansMhz, state.lastMaxFrekansMhz, state.lastFrekansTipi,
+            state.lastMinPriMicroSec, state.lastMaxPriMicroSec,
+            state.lastMinPwMicroSec, state.lastMaxPwMicroSec,
+            state.lastMinAtpMicroSec, state.lastMaxAtpMicroSec,
+            prevPage, state.emissionPageSize
+        );
     }
 
-    @Tool(description = "Belirtilen kriterlere uyan radar kestirimlerini coğrafi veya teknik parametrelerle filtreler. Filtreler: centerLat, centerLon, radiusKm, lastMinutes, status, band, minFrequencyMhz, maxFrequencyMhz, maxSemiMajorAxisMeters.")
-    public List<EmitterFix> queryEmitterFixes(
-        Double centerLat,
-        Double centerLon,
-        Double radiusKm,
-        Integer lastMinutes,
-        EmitterActivity status,
-        String band,
-        Double minFrequencyMhz,
-        Double maxFrequencyMhz,
-        Double maxSemiMajorAxisMeters,
-        Double minSemiMajorAxisMeters
+    @Tool(description = "Elektronik Taarruz (ET) uygulanan, susturulan veya hudut tacizi yapan hedeflerin özel operasyonel durum raporunu getirir.")
+    public List<TacticalEmissionSummaryDto> queryElectronicAttackAndHarassment() {
+        CALL_LOGS.get().add("Tool: queryElectronicAttackAndHarassment() çalıştırıldı.");
+
+        Specification<TacticalEmissionEntity> spec = (root, query, cb) -> {
+            Predicate etActive = cb.equal(root.get("etUygulamaDurumu"), EtUygulamaDurumu.UYGULANIYOR);
+            Predicate etSusturdu = cb.equal(root.get("etUygulamaDurumu"), EtUygulamaDurumu.SUSTURDU);
+            Predicate isTaciz = cb.isTrue(root.get("taciz"));
+            return cb.or(etActive, etSusturdu, isTaciz);
+        };
+
+        List<TacticalEmissionEntity> list = emissionRepo.findAll(
+            spec,
+            Sort.by(Sort.Direction.DESC, "sonTespitZamani")
+        );
+
+        List<TacticalEmissionSummaryDto> dtos = list.stream().map(this::toSummaryDto).collect(Collectors.toList());
+        dtos.forEach(d -> QUERIED_EMISSIONS.get().put(d.id(), d));
+        return dtos;
+    }
+
+    @Tool(description = "Belirli bir taktik emisyonun (emissionId) çoklu Frekans Listesini, PRI/PW listelerini, Anten Tarama Deseni (ATP) periyotlarını, operatör ve onay notlarını içeren derin teknik detaylarını döner.")
+    public TacticalEmissionDetailDto getEmissionDetails(String emissionId) {
+        CALL_LOGS.get().add("Tool: getEmissionDetails(emissionId=" + emissionId + ") çalıştırıldı.");
+
+        TacticalEmissionEntity e = emissionRepo.findById(emissionId)
+            .orElseThrow(() -> new IllegalArgumentException("Emisyon bulunamadı: " + emissionId));
+
+        List<FrequencyEntry> freqList = Collections.emptyList();
+        List<PriEntry> priList = Collections.emptyList();
+        List<PwEntry> pwList = Collections.emptyList();
+        List<AtpEntry> atpList = Collections.emptyList();
+
+        try {
+            if (e.getFrekansListesiJson() != null) {
+                freqList = objectMapper.readValue(e.getFrekansListesiJson(), new TypeReference<>() {});
+            }
+            if (e.getPriListesiJson() != null) {
+                priList = objectMapper.readValue(e.getPriListesiJson(), new TypeReference<>() {});
+            }
+            if (e.getPwListesiJson() != null) {
+                pwList = objectMapper.readValue(e.getPwListesiJson(), new TypeReference<>() {});
+            }
+            if (e.getAtpListesiJson() != null) {
+                atpList = objectMapper.readValue(e.getAtpListesiJson(), new TypeReference<>() {});
+            }
+        } catch (Exception ex) {
+            log.error("JSON parse hatası: {}", ex.getMessage());
+        }
+
+        return new TacticalEmissionDetailDto(
+            e.getId(),
+            e.getVeriKaynagi() != null ? e.getVeriKaynagi().name() : null,
+            e.getKuvvetSiraNo(),
+            e.getUstBirlikRef(),
+            e.getEhUnsuru(),
+            e.getYon(),
+            e.getEhUnsuruEnlem(),
+            e.getEhUnsuruBoylam(),
+            e.getEhUnsuruIrtifa(),
+            e.getYayinEnlem(),
+            e.getYayinBoylam(),
+            e.getYayinSemiMajorMeters(),
+            e.getYayinSemiMinorMeters(),
+            e.getYayinOrientationDegrees(),
+            e.getHedefYerBilgisi(),
+            e.getHedefMevziBilgisi(),
+            e.getTeshisKimlik() != null ? e.getTeshisKimlik().name() : null,
+            e.getElintNotasyonu(),
+            e.getHedefKaynagi() != null ? e.getHedefKaynagi().name() : null,
+            e.getPolarizasyon() != null ? e.getPolarizasyon().name() : null,
+            e.getSpotNo(),
+            e.getPulseCw() != null ? e.getPulseCw().name() : null,
+            e.getRadarGorevi(),
+            e.getRadarAdi(),
+            e.getPlatformOrtami() != null ? e.getPlatformOrtami().name() : null,
+            e.getPlatformTipi() != null ? e.getPlatformTipi().name() : null,
+            e.getGenlikDbm(),
+            e.getModulasyon() != null ? e.getModulasyon().name() : null,
+            e.getEtUygulamaDurumu() != null ? e.getEtUygulamaDurumu().name() : null,
+            e.getIlkTespitZamani(),
+            e.getSonTespitZamani(),
+            e.getSureSn(),
+            e.getHss(),
+            e.getTaciz(),
+            e.getRadarKesitAlani(),
+            e.getRadarIzNumarasi(),
+            e.getUcakKuyrukNumarasi(),
+            e.getMinFrekansMhz(),
+            e.getMaxFrekansMhz(),
+            e.getMinPriMicroSec(),
+            e.getMaxPriMicroSec(),
+            e.getMinPwMicroSec(),
+            e.getMaxPwMicroSec(),
+            e.getMinAtpMicroSec(),
+            e.getMaxAtpMicroSec(),
+            freqList,
+            priList,
+            pwList,
+            atpList,
+            e.getOperatorNotu(),
+            e.getOnaylayanKullanici(),
+            e.getOnayNotu()
+        );
+    }
+
+    @Tool(description = "Zaman-Frekans spektral şelale (Scatter/Waterfall) grafiği için ölçüm noktalarını döner. Her nokta: dakika cinsinden zaman, frekans (MHz), teşhis, radar adı ve PRI bilgisini içerir.")
+    public List<Map<String, Object>> getTimeFrequencyDistribution(String teshisKimlik, String veriKaynagi, String radarAdi, Integer limit) {
+        String cleanTeshis = cleanParam(teshisKimlik);
+        String cleanKaynak = cleanParam(veriKaynagi);
+        String cleanRadar = cleanParam(radarAdi);
+        int max = (limit == null || limit <= 0) ? 250 : Math.min(limit, 500);
+
+        CALL_LOGS.get().add(String.format("Tool: getTimeFrequencyDistribution(teshis=%s, kaynak=%s, radar=%s, limit=%d)", cleanTeshis, cleanKaynak, cleanRadar, max));
+
+        Specification<TacticalEmissionEntity> spec = createSpecification(
+            cleanTeshis, cleanKaynak, cleanRadar, null, null, null, null,
+            null, null, null, null, null, null, null, null, null
+        );
+
+        List<TacticalEmissionEntity> list = emissionRepo.findAll(
+            spec,
+            PageRequest.of(0, max, Sort.by(Sort.Direction.DESC, "sonTespitZamani"))
+        ).getContent();
+
+        DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault());
+
+        List<Map<String, Object>> points = new ArrayList<>();
+        for (TacticalEmissionEntity e : list) {
+            if (e.getSonTespitZamani() == null || e.getMinFrekansMhz() == null) continue;
+
+            String timeStr = timeFmt.format(e.getSonTespitZamani());
+            String[] parts = timeStr.split(":");
+            int minutesFromMidnight = Integer.parseInt(parts[0]) * 60 + Integer.parseInt(parts[1]);
+
+            Map<String, Object> p = new LinkedHashMap<>();
+            p.put("emissionId", e.getId());
+            p.put("timeStr", timeStr);
+            p.put("timeMinutes", minutesFromMidnight);
+            p.put("frequencyMhz", e.getMinFrekansMhz());
+            p.put("maxFrequencyMhz", e.getMaxFrekansMhz());
+            p.put("radarAdi", e.getRadarAdi());
+            p.put("teshisKimlik", e.getTeshisKimlik() != null ? e.getTeshisKimlik().name() : "BILINMEYEN");
+            p.put("taciz", e.getTaciz());
+            p.put("etUygulamaDurumu", e.getEtUygulamaDurumu() != null ? e.getEtUygulamaDurumu().name() : "YOK");
+            p.put("priMicroSec", e.getMinPriMicroSec());
+            p.put("pwMicroSec", e.getMinPwMicroSec());
+            points.add(p);
+        }
+
+        return points;
+    }
+
+    private TeshisKimlik normalizeTeshis(String val) {
+        if (val == null) return null;
+        String v = val.toUpperCase().replace("İ", "I").replace("Ü", "U").replace("Ş", "S");
+        if (v.contains("MUHTEMEL") && v.contains("DUS")) return TeshisKimlik.MUHTEMEL_DUSMAN;
+        if (v.contains("MUHTEMEL") && v.contains("DOST")) return TeshisKimlik.MUHTEMEL_DOST;
+        if (v.contains("DUSMAN") || v.contains("TEHDIT")) return TeshisKimlik.DUSMAN;
+        if (v.contains("DOST")) return TeshisKimlik.DOST;
+        if (v.contains("BILIN")) return TeshisKimlik.BILINMEYEN;
+        if (v.contains("TARAF")) return TeshisKimlik.TARAFSIZ;
+        try { return TeshisKimlik.valueOf(v); } catch (Exception ignored) { return null; }
+    }
+
+    private VeriKaynagi normalizeVeriKaynagi(String val) {
+        if (val == null) return null;
+        String v = val.toUpperCase().replace("İ", "I");
+        if (v.contains("DENIZ")) return VeriKaynagi.DENIZ;
+        if (v.contains("KARA")) return VeriKaynagi.KARA;
+        if (v.contains("HAVA")) return VeriKaynagi.HAVA;
+        if (v.contains("GEN")) return VeriKaynagi.GEN_KUR;
+        try { return VeriKaynagi.valueOf(v); } catch (Exception ignored) { return null; }
+    }
+
+    private PlatformOrtami normalizePlatformOrtami(String val) {
+        if (val == null) return null;
+        String v = val.toUpperCase().replace("İ", "I").replace("Ü", "U");
+        if (v.contains("HAVA")) return PlatformOrtami.HAVA;
+        if (v.contains("KARA")) return PlatformOrtami.KARA;
+        if (v.contains("DENIZ") || v.contains("SU_USTU") || v.contains("SU USTU")) return PlatformOrtami.SU_USTU;
+        if (v.contains("SU_ALTI") || v.contains("SU ALTI")) return PlatformOrtami.SU_ALTI;
+        try { return PlatformOrtami.valueOf(v); } catch (Exception ignored) { return null; }
+    }
+
+    private EtUygulamaDurumu normalizeEtDurumu(String val) {
+        if (val == null) return null;
+        String v = val.toUpperCase().replace("İ", "I").replace("Ş", "S");
+        if (v.contains("SUSTUR")) return EtUygulamaDurumu.SUSTURDU;
+        if (v.contains("UYGULAN") || v.contains("AKTIF")) return EtUygulamaDurumu.UYGULANIYOR;
+        if (v.contains("YOK") || v.contains("UYGULANMIYOR")) return EtUygulamaDurumu.UYGULANMIYOR;
+        try { return EtUygulamaDurumu.valueOf(v); } catch (Exception ignored) { return null; }
+    }
+
+    private Specification<TacticalEmissionEntity> createSpecification(
+        String teshisKimlik, String veriKaynagi, String radarAdi, String hss, Boolean taciz,
+        String etUygulamaDurumu, String platformOrtami,
+        Double minFreq, Double maxFreq, String freqType,
+        Double minPri, Double maxPri,
+        Double minPw, Double maxPw,
+        Double minAtp, Double maxAtp
     ) {
-        logTrace(String.format("🔍 [GEMINI -> TOOL CALL] queryEmitterFixes(lat=%s, lon=%s, rad=%s, band=%s, status=%s)",
-            centerLat, centerLon, radiusKm, band, status));
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
-        List<EmitterFix> results = repository.findFixes(centerLat, centerLon, radiusKm, lastMinutes, status, band,
-            minFrequencyMhz, maxFrequencyMhz, maxSemiMajorAxisMeters, minSemiMajorAxisMeters);
-        
-        List<EmitterFix> capped = results.stream().limit(25).toList();
-        capped.forEach(f -> QUERIED_FIXES.get().put(f.fixId(), f));
+            TeshisKimlik tk = normalizeTeshis(teshisKimlik);
+            if (tk != null) {
+                predicates.add(cb.equal(root.get("teshisKimlik"), tk));
+            }
 
-        logTrace(String.format("⚡ [TOOL RESULT -> GEMINI] %d hedef bulundu, bağlama en kritik %d adet iletildi.",
-            results.size(), capped.size()));
-        return capped;
+            VeriKaynagi vk = normalizeVeriKaynagi(veriKaynagi);
+            if (vk != null) {
+                predicates.add(cb.equal(root.get("veriKaynagi"), vk));
+            }
+
+            PlatformOrtami po = normalizePlatformOrtami(platformOrtami);
+            if (po != null) {
+                predicates.add(cb.equal(root.get("platformOrtami"), po));
+            }
+
+            EtUygulamaDurumu et = normalizeEtDurumu(etUygulamaDurumu);
+            if (et != null) {
+                predicates.add(cb.equal(root.get("etUygulamaDurumu"), et));
+            }
+
+            if (radarAdi != null) {
+                predicates.add(cb.like(cb.lower(root.get("radarAdi")), "%" + radarAdi.toLowerCase() + "%"));
+            }
+
+            if (hss != null) {
+                predicates.add(cb.like(cb.lower(root.get("hss")), "%" + hss.toLowerCase() + "%"));
+            }
+
+            if (taciz != null) {
+                predicates.add(cb.equal(root.get("taciz"), taciz));
+            }
+
+            if (etUygulamaDurumu != null) {
+                try {
+                    predicates.add(cb.equal(root.get("etUygulamaDurumu"), EtUygulamaDurumu.valueOf(etUygulamaDurumu.toUpperCase())));
+                } catch (IllegalArgumentException ignored) {}
+            }
+
+            if (platformOrtami != null) {
+                try {
+                    predicates.add(cb.equal(root.get("platformOrtami"), PlatformOrtami.valueOf(platformOrtami.toUpperCase())));
+                } catch (IllegalArgumentException ignored) {}
+            }
+
+            // Dummy / Halüsinasyon sınır temizliği
+            Double effectiveMinFreq = (minFreq != null && minFreq > 0.0) ? minFreq : null;
+            Double effectiveMaxFreq = (maxFreq != null && maxFreq < 900000.0) ? maxFreq : null;
+            Double effectiveMinPri = (minPri != null && minPri > 0.0) ? minPri : null;
+            Double effectiveMaxPri = (maxPri != null && maxPri < 900000.0) ? maxPri : null;
+            Double effectiveMinPw = (minPw != null && minPw > 0.0) ? minPw : null;
+            Double effectiveMaxPw = (maxPw != null && maxPw < 900000.0) ? maxPw : null;
+            Double effectiveMinAtp = (minAtp != null && minAtp > 0.0) ? minAtp : null;
+            Double effectiveMaxAtp = (maxAtp != null && maxAtp < 90000000.0) ? maxAtp : null;
+
+            // 📡 Frekans Aralığı Kesişim Mantığı: target.min <= query.max AND target.max >= query.min
+            if (effectiveMinFreq != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("maxFrekansMhz"), effectiveMinFreq));
+            }
+            if (effectiveMaxFreq != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("minFrekansMhz"), effectiveMaxFreq));
+            }
+            if (freqType != null) {
+                predicates.add(cb.like(cb.lower(root.get("frekansListesiJson")), "%" + freqType.toLowerCase() + "%"));
+            }
+
+            // ⏱️ PRI Aralığı Kesişim Mantığı
+            if (effectiveMinPri != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("maxPriMicroSec"), effectiveMinPri));
+            }
+            if (effectiveMaxPri != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("minPriMicroSec"), effectiveMaxPri));
+            }
+
+            // 📏 PW Aralığı Kesişim Mantığı
+            if (effectiveMinPw != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("maxPwMicroSec"), effectiveMinPw));
+            }
+            if (effectiveMaxPw != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("minPwMicroSec"), effectiveMaxPw));
+            }
+
+            // 🔄 ATP Aralığı Kesişim Mantığı
+            if (effectiveMinAtp != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("maxAtpMicroSec"), effectiveMinAtp));
+            }
+            if (effectiveMaxAtp != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("minAtpMicroSec"), effectiveMaxAtp));
+            }
+
+            return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new Predicate[0]));
+        };
     }
 
-    @Tool(description = "Belirli bir radar kestirimini (fixId) oluşturan kaynak LOB hatlarını döner.")
-    public List<EmitterLob> getContributingLobsForFix(String fixId) {
-        logTrace(String.format("🔍 [GEMINI -> TOOL CALL] getContributingLobsForFix(fixId=%s)", fixId));
-        List<EmitterLob> lobs = repository.findContributingLobsForFix(fixId);
-        lobs.forEach(l -> QUERIED_LOBS.get().put(l.lobId(), l));
-        return lobs;
+    private TacticalEmissionSummaryDto toSummaryDto(TacticalEmissionEntity e) {
+        return new TacticalEmissionSummaryDto(
+            e.getId(),
+            e.getVeriKaynagi() != null ? e.getVeriKaynagi().name() : null,
+            e.getKuvvetSiraNo(),
+            e.getEhUnsuru(),
+            e.getYon(),
+            e.getEhUnsuruEnlem(),
+            e.getEhUnsuruBoylam(),
+            e.getTeshisKimlik() != null ? e.getTeshisKimlik().name() : null,
+            e.getRadarAdi(),
+            e.getRadarGorevi(),
+            e.getHss(),
+            e.getTaciz(),
+            e.getEtUygulamaDurumu() != null ? e.getEtUygulamaDurumu().name() : null,
+            e.getPlatformOrtami() != null ? e.getPlatformOrtami().name() : null,
+            e.getPlatformTipi() != null ? e.getPlatformTipi().name() : null,
+            e.getHedefYerBilgisi(),
+            e.getHedefMevziBilgisi(),
+            e.getMinFrekansMhz(),
+            e.getMaxFrekansMhz(),
+            e.getMinPriMicroSec(),
+            e.getMaxPriMicroSec(),
+            e.getMinPwMicroSec(),
+            e.getMaxPwMicroSec(),
+            e.getMinAtpMicroSec(),
+            e.getMaxAtpMicroSec(),
+            e.getSonTespitZamani(),
+            e.getYayinEnlem(),
+            e.getYayinBoylam(),
+            e.getYayinSemiMajorMeters(),
+            e.getYayinSemiMinorMeters(),
+            e.getYayinOrientationDegrees(),
+            e.getSpotNo(),
+            e.getElintNotasyonu(),
+            e.getPolarizasyon() != null ? e.getPolarizasyon().name() : null,
+            e.getPulseCw() != null ? e.getPulseCw().name() : null,
+            e.getModulasyon() != null ? e.getModulasyon().name() : null,
+            e.getGenlikDbm(),
+            e.getSureSn(),
+            e.getUcakKuyrukNumarasi(),
+            e.getOperatorNotu(),
+            e.getOnaylayanKullanici(),
+            e.getOnayNotu()
+        );
     }
 }
+
+
+
+
+
