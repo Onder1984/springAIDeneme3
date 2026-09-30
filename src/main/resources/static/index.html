@@ -999,35 +999,35 @@
 
         <div class="header-kpi-bar" id="kpi-bar">
             <div class="kpi-pill">
-                <span class="kpi-label">KESTİRİM:</span>
-                <span class="kpi-val cyan" id="kpi-fixes">22</span>
+                <span class="kpi-label">RADAR:</span>
+                <span class="kpi-val cyan" id="kpi-radar">160</span>
             </div>
             <div class="kpi-pill">
-                <span class="kpi-label">AKTİF:</span>
-                <span class="kpi-val green" id="kpi-active">14</span>
+                <span class="kpi-label">MUHABERE:</span>
+                <span class="kpi-val green" id="kpi-comint">120</span>
+            </div>
+            <div class="kpi-pill">
+                <span class="kpi-label">DÜŞMAN:</span>
+                <span class="kpi-val red" id="kpi-threats">--</span>
             </div>
             <div class="kpi-pill">
                 <span class="kpi-label">TACİZ:</span>
-                <span class="kpi-val red" id="kpi-silent">3</span>
+                <span class="kpi-val amber" id="kpi-taciz">--</span>
             </div>
             <div class="kpi-pill">
-                <span class="kpi-label">KESİKLİ:</span>
-                <span class="kpi-val amber" id="kpi-intermittent">5</span>
+                <span class="kpi-label">ET AKTİF:</span>
+                <span class="kpi-val cyan" id="kpi-et">--</span>
             </div>
             <div class="kpi-pill">
-                <span class="kpi-label">SUSTURULDU:</span>
-                <span class="kpi-val cyan" id="kpi-lobs">87</span>
+                <span class="kpi-label">KRİPTO:</span>
+                <span class="kpi-val purple" id="kpi-kripto">--</span>
             </div>
             <div class="kpi-pill">
-                <span class="kpi-label">YETİM LOB:</span>
-                <span class="kpi-val amber" id="kpi-orphans">12</span>
-            </div>
-            <div class="kpi-pill">
-                <span class="kpi-label">SENSÖR DÜĞÜMÜ:</span>
-                <span class="kpi-val purple" id="kpi-sensors">8</span>
+                <span class="kpi-label">KARIŞTIRMA:</span>
+                <span class="kpi-val red" id="kpi-jamming">--</span>
             </div>
             <button class="btn-refresh" onclick="loadMacroStats()" title="İstatistikleri Yenile">
-                ↻
+                🔄
             </button>
         </div>
     </header>
@@ -1064,6 +1064,18 @@
 
             <!-- Quick Suggestion Chips -->
             <div class="quick-prompts-deck">
+                <button class="chip-btn" style="border-color:#00e5ff; color:#00e5ff; font-weight:700;" onclick="sendQuickPrompt('VHF bandındaki düşman muhabere telsizlerini ve kriptolu ağları listele.')">
+                    📻 VHF Düşman Telsizleri & Kripto
+                </button>
+                <button class="chip-btn" style="border-color:#ff1744; color:#ff1744; font-weight:700;" onclick="sendQuickPrompt('Gayda ve Gürültü karıştırması uygulayan düşman telsiz yayınlarını getir.')">
+                    🔊 Gayda / Gürültü Karıştırmaları
+                </button>
+                <button class="chip-btn" style="border-color:#b388ff; color:#b388ff; font-weight:700;" onclick="sendQuickPrompt('VOLGA çağrı adlı telsiz istasyonunun haberleşme ağını ve karşı istasyonlarını analiz et.')">
+                    🌐 VOLGA Telsiz Ağı Link Analizi
+                </button>
+                <button class="chip-btn" style="border-color:#ffb300; color:#ffb300; font-weight:700;" onclick="sendQuickPrompt('Darbe patlama (burst transmission) şeklinde yayın yapan istihbari telsiz hedeflerini göster.')">
+                    ⚡ Darbe Patlama (Burst) Yayınları
+                </button>
                 <button class="chip-btn" style="border-color:#ff007f; color:#ff4081; font-weight:700;" onclick="sendQuickPrompt('Taktik sahadaki radar yayınlarının zaman ve frekansa göre saçılım / aktivite yoğunluk grafiğini (Scatter) çiz, platform ve tehdit durumunu incele.')">
                     🌊 Grafik: Zaman-Frekans Yoğunluk
                 </button>
@@ -1138,10 +1150,13 @@
         <aside class="side-section">
             <div class="side-tabs">
                 <button class="tab-btn active" id="tab-btn-emitters" onclick="switchTab('emitters')">
-                    RADAR LİSTESİ (<span id="side-emitter-count">22</span>)
+                    📡 RADAR (<span id="side-emitter-count">160</span>)
+                </button>
+                <button class="tab-btn" id="tab-btn-comint" onclick="switchTab('comint')">
+                    📻 MUHABERE (<span id="side-comint-count">120</span>)
                 </button>
                 <button class="tab-btn" id="tab-btn-telemetry" onclick="switchTab('telemetry')">
-                    CANLI TELEMETRİ LOGLARI
+                    ⚡ TELEMETRİ
                 </button>
             </div>
 
@@ -1165,6 +1180,28 @@
                 </div>
             </div>
 
+            
+            <!-- Tab 2: COMINT (Muhabere) Inventory -->
+            <div class="side-content" id="tab-content-comint" style="display:none;">
+                <div class="filter-row">
+                    <button class="filter-pill active" onclick="filterComint('ALL', this)">Tümü</button>
+                    <button class="filter-pill" onclick="filterComint('DUSMAN', this)">Düşman</button>
+                    <button class="filter-pill" onclick="filterComint('KRIPTO', this)">🔐 Kripto</button>
+                    <button class="filter-pill" onclick="filterComint('DARBE_PATLAMA', this)">⚡ Darbe</button>
+                    <button class="filter-pill" onclick="filterComint('KARISTIRMA', this)">🔊 Karıştırma</button>
+                    <button class="filter-pill" onclick="filterComint('HF', this)">HF</button>
+                    <button class="filter-pill" onclick="filterComint('VHF', this)">VHF</button>
+                </div>
+                <div class="side-pagination-bar" id="side-comint-pagination">
+                    <button class="side-page-btn" id="side-comint-prev-btn" onclick="changeComintPage(-1)">◀ Önceki</button>
+                    <span class="side-page-info" id="side-comint-page-indicator">Sayfa 1 / 1</span>
+                    <button class="side-page-btn" id="side-comint-next-btn" onclick="changeComintPage(1)">Sonraki ▶</button>
+                </div>
+                <div id="comint-list" style="display:flex; flex-direction:column; gap:8px;">
+                    <!-- Comint cards will be rendered dynamically -->
+                </div>
+            </div>
+
             <!-- Tab 2: Real-time Telemetry Stream -->
             <div class="side-content" id="tab-content-telemetry" style="display:none;">
                 <div class="terminal-container">
@@ -1184,30 +1221,45 @@
     </div>
 
     <script>
-        let allFixesData = [];
+        let allRadarData = [];
+        let allComintData = [];
         let currentFilter = 'ALL';
+        let currentComintFilter = 'ALL';
+        let currentRadarPage = 0;
+        let currentComintPage = 0;
+        const RADAR_PAGE_SIZE = 15;
+        const COMINT_PAGE_SIZE = 15;
 
-        // Sayfa yüklendiğinde istatistikleri ve radar listesini çek
+        // Sayfa yüklendiğinde istatistikleri ve listeleri çek
         window.addEventListener('DOMContentLoaded', () => {
             loadMacroStats();
             loadRadarList();
+            loadComintList();
         });
 
-        // Makro istatistikleri API'den al
+        // Makro istatistikleri API'den al (RADAR + COMINT)
         async function loadMacroStats() {
             try {
-                const res = await fetch('/api/v1/tactical/stats');
-                if (res.ok) {
-                    const stats = await res.json();
-                    document.getElementById('kpi-fixes').innerText = stats.totalFixes || 22;
-                    document.getElementById('kpi-active').innerText = stats.activeFixes || 14;
-                    document.getElementById('kpi-silent').innerText = stats.silentFixes || 3;
-                    document.getElementById('kpi-intermittent').innerText = stats.intermittentFixes || 5;
-                    document.getElementById('kpi-lobs').innerText = stats.totalLobs || 87;
-                    document.getElementById('kpi-orphans').innerText = stats.orphanLobsCount || 12;
-                    if (stats.sensorContributions) {
-                        document.getElementById('kpi-sensors').innerText = Object.keys(stats.sensorContributions).length;
-                    }
+                const [rRes, cRes] = await Promise.all([
+                    fetch('/api/v1/tactical/stats'),
+                    fetch('/api/v1/tactical/comint/stats')
+                ]);
+
+                if (rRes.ok) {
+                    const rStats = await rRes.json();
+                    document.getElementById('kpi-radar').innerText = rStats.toplamEmisyonSayisi || 160;
+                    document.getElementById('kpi-taciz').innerText = rStats.tacizYapanHedefSayisi || 0;
+                    document.getElementById('kpi-et').innerText = rStats.aktifEtUygulananSayisi || 0;
+                }
+
+                if (cRes.ok) {
+                    const cStats = await cRes.json();
+                    document.getElementById('kpi-comint').innerText = cStats.toplamMuhabereKaydi || 120;
+                    document.getElementById('kpi-kripto').innerText = cStats.kriptoluYayinSayisi || 0;
+                    document.getElementById('kpi-jamming').innerText = (cStats.karistirmaGaydaSayisi || 0) + (cStats.karistirmaGurultuSayisi || 0);
+                    
+                    const dusmanComint = cStats.dusmanMuhabereSayisi || 0;
+                    document.getElementById('kpi-threats').innerText = dusmanComint;
                 }
             } catch (err) {
                 console.warn("Stats yüklenemedi:", err);
@@ -1217,45 +1269,58 @@
         // Radar envanter listesini API'den al ve listele
         async function loadRadarList() {
             try {
-                const res = await fetch('/api/v1/tactical/fixes');
+                const res = await fetch('/api/v1/tactical/emissions?page=0&size=200');
                 if (res.ok) {
                     const data = await res.json();
-                    allFixesData = Array.isArray(data) ? data : (data.items || []);
-                    document.getElementById('side-emitter-count').innerText = data.totalCount || allFixesData.length;
-                    renderEmitterList();
+                    allRadarData = data.items || [];
+                    document.getElementById('side-emitter-count').innerText = data.totalCount || allRadarData.length;
+                    renderRadarList();
                 }
             } catch (err) {
                 console.warn("Radar listesi yüklenemedi:", err);
             }
         }
 
-        let currentRadarPage = 0;
-        const RADAR_PAGE_SIZE = 15;
+        // Comint (Muhabere) listesini API'den al ve listele
+        async function loadComintList() {
+            try {
+                const res = await fetch('/api/v1/tactical/comint/emissions?page=0&size=200');
+                if (res.ok) {
+                    const data = await res.json();
+                    allComintData = data.items || [];
+                    document.getElementById('side-comint-count').innerText = data.totalCount || allComintData.length;
+                    renderComintList();
+                }
+            } catch (err) {
+                console.warn("Comint listesi yüklenemedi:", err);
+            }
+        }
 
         function changeRadarPage(delta) {
             currentRadarPage += delta;
-            renderEmitterList();
+            renderRadarList();
         }
 
         function filterEmitters(filter, btn) {
             currentFilter = filter;
             currentRadarPage = 0;
-            document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+            btn.parentElement.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            renderEmitterList();
+            renderRadarList();
         }
 
-        function renderEmitterList() {
+        function renderRadarList() {
             const container = document.getElementById('emitter-list');
+            if (!container) return;
             container.innerHTML = '';
 
-            const filtered = allFixesData.filter(fix => {
+            const filtered = allRadarData.filter(e => {
                 if (currentFilter === 'ALL') return true;
-                if (currentFilter === 'ACTIVE') return fix.status === 'ACTIVE';
-                if (currentFilter === 'SILENT') return fix.status === 'SILENT';
-                if (fix.rfSignature && fix.rfSignature.band) {
-                    return fix.rfSignature.band.toUpperCase() === currentFilter.toUpperCase();
-                }
+                if (currentFilter === 'ACTIVE') return (e.teshisKimlik === 'DUSMAN' || e.taciz);
+                if (currentFilter === 'SILENT') return e.etUygulamaDurumu === 'SUSTURDU';
+                if (currentFilter === 'X') return (e.minFrekansMhz >= 8000 && e.maxFrekansMhz <= 12500);
+                if (currentFilter === 'S') return (e.minFrekansMhz >= 2000 && e.maxFrekansMhz <= 4000);
+                if (currentFilter === 'Ku') return (e.minFrekansMhz >= 12000 && e.maxFrekansMhz <= 18000);
                 return true;
             });
 
@@ -1269,7 +1334,7 @@
 
             const indicator = document.getElementById('side-page-indicator');
             if (indicator) {
-                indicator.innerText = `Sayfa ${currentRadarPage + 1} / ${totalPages} (${filtered.length} Hedef)`;
+                indicator.innerText = `Sayfa ${currentRadarPage + 1} / ${totalPages} (${filtered.length} Radar)`;
             }
 
             const prevBtn = document.getElementById('side-prev-btn');
@@ -1277,46 +1342,126 @@
             if (prevBtn) prevBtn.disabled = (currentRadarPage === 0);
             if (nextBtn) nextBtn.disabled = (currentRadarPage >= totalPages - 1);
 
-            pagedItems.forEach(fix => {
+            pagedItems.forEach(e => {
                 const card = document.createElement('div');
                 card.className = 'emitter-card';
 
-                const semiMajor = fix.errorEllipse ? fix.errorEllipse.semiMajorAxisMeters : 0;
-                let accClass = 'medium';
-                let accText = 'ORTA';
-                if (semiMajor <= 2000) { accClass = 'high'; accText = 'YÜKSEK'; }
-                else if (semiMajor > 5000) { accClass = 'low'; accText = 'ŞÜPHELİ'; }
-
-                let statusClass = fix.status.toLowerCase();
-                let platform = fix.platformType || 'UNKNOWN';
-                let radar = fix.radarType || 'Tanımsız Radar';
+                let tCls = (e.teshisKimlik || '').toLowerCase();
+                if (tCls === 'dusman') tCls = 'silent';
+                else if (tCls === 'dost') tCls = 'active';
+                else tCls = 'intermittent';
 
                 card.innerHTML = `
                     <div class="emitter-card-header">
                         <div style="display:flex; align-items:center; gap:6px;">
-                            <span style="color:#ffffff;">${fix.fixId}</span>
-                            <span class="badge-platform ${platform.toLowerCase()}">${platform}</span>
+                            <span style="color:#ffffff; font-weight:700;">${e.id}</span>
+                            <span class="badge-platform" style="background:rgba(0,229,255,0.15); color:var(--accent-cyan);">${e.platformOrtami || 'KARA'}</span>
+                            ${e.taciz ? '<span class="badge-status silent" style="font-size:9px;">TACİZ</span>' : ''}
                         </div>
-                        <span class="badge-status ${statusClass}">${fix.status}</span>
+                        <span class="badge-status ${tCls}">${e.teshisKimlik || 'BİLİNMEYEN'}</span>
                     </div>
-                    <div style="font-family:var(--font-display); font-size:11.5px; font-weight:700; color:var(--accent-cyan); margin-top:2px; letter-spacing:0.3px;">
-                        🎯 ${radar}
+                    <div style="font-family:var(--font-display); font-size:12px; font-weight:700; color:var(--accent-cyan); margin-top:2px;">
+                        🎯 ${e.radarAdi || 'Tanımsız Radar'}
                     </div>
                     <div class="emitter-card-details">
-                        <span>${fix.rfSignature ? fix.rfSignature.band : ''} Bandı (${fix.rfSignature ? Math.round(fix.rfSignature.frequencyMhz) : ''} MHz)</span>
-                        <span class="accuracy-tag ${accClass}">±${Math.round(semiMajor)}m (${accText})</span>
+                        <span>${e.minFrekansMhz ? Math.round(e.minFrekansMhz) : '-'} - ${e.maxFrekansMhz ? Math.round(e.maxFrekansMhz) : '-'} MHz</span>
+                        <span style="color:var(--accent-amber);">${e.hss || 'HSS Yok'}</span>
                     </div>
                     <div class="emitter-card-details" style="font-size:10px; color:var(--text-dim);">
-                        <span>${fix.sourceLobIds ? fix.sourceLobIds.length : 0} Kaynak LOB</span>
-                        <span>%${fix.errorEllipse ? fix.errorEllipse.confidencePercent : 0} Güven</span>
+                        <span>${e.ehUnsuru || ''}</span>
+                        <span>${e.hedefYerBilgisi || ''}</span>
                     </div>
                 `;
 
-                // Tıklanırsa sohbet kutusuna hedefi sorgulat
-                card.onclick = () => {
-                    sendQuickPrompt(`${fix.fixId} nolu kestirimin (${radar}) konumunu, hata payını ve kaynak LOB hatlarını detaylı incele.`);
-                };
+                card.onclick = () => showEmissionDetailModal(e.id);
+                container.appendChild(card);
+            });
+        }
 
+        function changeComintPage(delta) {
+            currentComintPage += delta;
+            renderComintList();
+        }
+
+        function filterComint(filter, btn) {
+            currentComintFilter = filter;
+            currentComintPage = 0;
+            btn.parentElement.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderComintList();
+        }
+
+        function renderComintList() {
+            const container = document.getElementById('comint-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const filtered = allComintData.filter(c => {
+                if (currentComintFilter === 'ALL') return true;
+                if (currentComintFilter === 'DUSMAN') return (c.teshisKimlik === 'DUSMAN' || c.teshisKimlik === 'MUHTEMEL_DUSMAN');
+                if (currentComintFilter === 'KRIPTO') return c.haberlesmeSekli === 'KRIPTO';
+                if (currentComintFilter === 'DARBE_PATLAMA') return c.haberlesmeSekli === 'DARBE_PATLAMA';
+                if (currentComintFilter === 'KARISTIRMA') return (c.haberlesmeSekli === 'KARISTIRMA_GAYDA' || c.haberlesmeSekli === 'KARISTIRMA_GURULTU');
+                if (currentComintFilter === 'HF') return c.tip === 'HF';
+                if (currentComintFilter === 'VHF') return c.tip === 'VHF';
+                return true;
+            });
+
+            const totalPages = Math.max(1, Math.ceil(filtered.length / COMINT_PAGE_SIZE));
+            if (currentComintPage >= totalPages) currentComintPage = totalPages - 1;
+            if (currentComintPage < 0) currentComintPage = 0;
+
+            const startIdx = currentComintPage * COMINT_PAGE_SIZE;
+            const endIdx = Math.min(filtered.length, startIdx + COMINT_PAGE_SIZE);
+            const pagedItems = filtered.slice(startIdx, endIdx);
+
+            const indicator = document.getElementById('side-comint-page-indicator');
+            if (indicator) {
+                indicator.innerText = `Sayfa ${currentComintPage + 1} / ${totalPages} (${filtered.length} Telsiz Yayını)`;
+            }
+
+            const prevBtn = document.getElementById('side-comint-prev-btn');
+            const nextBtn = document.getElementById('side-comint-next-btn');
+            if (prevBtn) prevBtn.disabled = (currentComintPage === 0);
+            if (nextBtn) nextBtn.disabled = (currentComintPage >= totalPages - 1);
+
+            pagedItems.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'emitter-card';
+
+                let tCls = (c.teshisKimlik || '').toLowerCase();
+                if (tCls === 'dusman') tCls = 'silent';
+                else if (tCls === 'dost') tCls = 'active';
+                else tCls = 'intermittent';
+
+                let habIcon = '💬';
+                if (c.haberlesmeSekli === 'KRIPTO') habIcon = '🔐';
+                else if (c.haberlesmeSekli === 'DARBE_PATLAMA') habIcon = '⚡';
+                else if (c.haberlesmeSekli === 'KARISTIRMA_GAYDA' || c.haberlesmeSekli === 'KARISTIRMA_GURULTU') habIcon = '🔊';
+
+                card.innerHTML = `
+                    <div class="emitter-card-header">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="color:#ffffff; font-weight:700;">${c.id}</span>
+                            <span class="badge-platform" style="background:rgba(0,229,255,0.15); color:var(--accent-cyan);">${c.tip || 'VHF'}</span>
+                            <span style="font-size:10px; color:var(--accent-purple); font-weight:600;">${c.lisan || 'TR'}</span>
+                        </div>
+                        <span class="badge-status ${tCls}">${c.teshisKimlik || 'BİLİNMEYEN'}</span>
+                    </div>
+                    <div style="font-family:var(--font-display); font-size:12px; font-weight:700; color:#00e5ff; margin-top:2px;">
+                        ${habIcon} ${c.cagriAdi || 'Telsiz'} ➔ ${c.karsiCagriAdi || 'Karşı İstasyon'}
+                    </div>
+                    <div class="emitter-card-details">
+                        <span>${c.minFrekansMhz ? c.minFrekansMhz.toFixed(2) : '-'} - ${c.maxFrekansMhz ? c.maxFrekansMhz.toFixed(2) : '-'} MHz</span>
+                        <span style="color:${c.mti ? 'var(--accent-amber)' : 'var(--text-dim)'};">${c.mti ? '🏃 HAREKETLİ' : '🏢 SABİT'}</span>
+                    </div>
+                    <div class="emitter-card-details" style="font-size:10px; color:var(--text-dim);">
+                        <span>${c.modulasyon || ''} / ${c.protokol || ''}</span>
+                        <span>${c.hedefYerBilgisi || ''}</span>
+                    </div>
+                `;
+
+                card.onclick = () => showComintDetailModal(c.id);
                 container.appendChild(card);
             });
         }
@@ -1324,8 +1469,11 @@
         // Sekme Değiştirici
         function switchTab(tab) {
             document.getElementById('tab-btn-emitters').classList.toggle('active', tab === 'emitters');
+            document.getElementById('tab-btn-comint').classList.toggle('active', tab === 'comint');
             document.getElementById('tab-btn-telemetry').classList.toggle('active', tab === 'telemetry');
+            
             document.getElementById('tab-content-emitters').style.display = tab === 'emitters' ? 'flex' : 'none';
+            document.getElementById('tab-content-comint').style.display = tab === 'comint' ? 'flex' : 'none';
             document.getElementById('tab-content-telemetry').style.display = tab === 'telemetry' ? 'flex' : 'none';
         }
 
@@ -1923,6 +2071,85 @@
     </style>
 
     <script>
+        
+        async function showComintDetailModal(id) {
+            try {
+                const res = await fetch(`/api/v1/tactical/comint/emissions/${id}`);
+                if (!res.ok) return;
+                const c = await res.json();
+
+                document.getElementById('modal-id').innerText = c.id || id;
+                document.getElementById('modal-teshis-badge').innerText = c.teshisKimlik || 'BİLİNMEYEN';
+
+                let tCls = (c.teshisKimlik || '').toLowerCase();
+                if (tCls === 'dusman') tCls = 'silent';
+                else if (tCls === 'dost') tCls = 'active';
+                else tCls = 'intermittent';
+                document.getElementById('modal-teshis-badge').className = `badge-status ${tCls}`;
+
+                const tacizBadge = document.getElementById('modal-taciz-badge');
+                tacizBadge.style.display = c.mti ? 'inline-block' : 'none';
+                tacizBadge.innerText = '🏃 HAREKETLİ (MTI)';
+
+                const etBadge = document.getElementById('modal-et-badge');
+                if (c.haberlesmeSekli === 'KRIPTO' || c.haberlesmeSekli === 'DARBE_PATLAMA' || (c.haberlesmeSekli && c.haberlesmeSekli.includes('KARISTIRMA'))) {
+                    etBadge.style.display = 'inline-block';
+                    etBadge.innerText = '⚡ ' + c.haberlesmeSekli;
+                } else {
+                    etBadge.style.display = 'none';
+                }
+
+                let freqRows = '';
+                if (c.frekansListesi && c.frekansListesi.length > 0) {
+                    freqRows = c.frekansListesi.map(f => `<tr><td>${f.frekansTipi || '-'}</td><td>${f.minFrekansMhz ? f.minFrekansMhz.toFixed(3) : '-'}</td><td>${f.maxFrekansMhz ? f.maxFrekansMhz.toFixed(3) : '-'}</td></tr>`).join('');
+                } else {
+                    freqRows = `<tr><td colspan="3">${c.minFrekansMhz || '-'} - ${c.maxFrekansMhz || '-'} MHz</td></tr>`;
+                }
+
+                document.getElementById('modal-content-body').innerHTML = `
+                    <div class="modal-grid-2">
+                        <div class="modal-field"><div class="modal-field-label">Çağrı Adı ➔ Karşı Çağrı Adı</div><div class="modal-field-value" style="color:var(--accent-cyan); font-weight:700;">📻 ${c.cagriAdi || '-'} ➔ ${c.karsiCagriAdi || '-'}</div></div>
+                        <div class="modal-field"><div class="modal-field-label">Lisan &amp; Tip</div><div class="modal-field-value">🗣️ ${c.lisan || '-'} | Tip: ${c.tip || '-'} (${c.bantGenisligiHz ? c.bantGenisligiHz + ' Hz' : '-'})</div></div>
+                        <div class="modal-field"><div class="modal-field-label">Haberleşme &amp; Çalışma Şekli</div><div class="modal-field-value">🔐 ${c.haberlesmeSekli || '-'} | ${c.calismaSekli || '-'}</div></div>
+                        <div class="modal-field"><div class="modal-field-label">Modülasyon &amp; Protokol</div><div class="modal-field-value">📡 ${c.modulasyon || '-'} | ${c.protokol || '-'}</div></div>
+                        <div class="modal-field"><div class="modal-field-label">Veri Kaynağı &amp; Birlik</div><div class="modal-field-value">🏛️ ${c.veriKaynagi || '-'} | ${c.goreviIcraEdenUstBirlik || '-'}</div></div>
+                        <div class="modal-field"><div class="modal-field-label">İcra Eden EH Unsuru &amp; Kerteriz</div><div class="modal-field-value">🎯 ${c.goreviIcraEdenEhUnsuru || '-'} (Yön: ${c.yon ? c.yon.toFixed(1) + '°' : '-'})</div></div>
+                        <div class="modal-field"><div class="modal-field-label">Hedef Yer Bilgisi</div><div class="modal-field-value">📍 ${c.hedefYerBilgisi || '-'}</div></div>
+                        <div class="modal-field"><div class="modal-field-label">Yayın Konumu (Kestirim Elipsi)</div><div class="modal-field-value">🌐 Enlem: ${c.yayinEnlem ? c.yayinEnlem.toFixed(4) : '-'}, Boylam: ${c.yayinBoylam ? c.yayinBoylam.toFixed(4) : '-'} (Maj: ${Math.round(c.yayinSemiMajorMeters || 0)}m, Min: ${Math.round(c.yayinSemiMinorMeters || 0)}m)</div></div>
+                        <div class="modal-field"><div class="modal-field-label">Sinyal Genliği &amp; Alt Eşik</div><div class="modal-field-value">📶 ${c.genlikDbm ? c.genlikDbm.toFixed(1) + ' dBm' : '-'} | Eşik: ${c.altEsikSeviyesiDbm ? c.altEsikSeviyesiDbm.toFixed(1) + ' dBm' : '-'}</div></div>
+                        <div class="modal-field"><div class="modal-field-label">Son Tespit Zamanı &amp; Süre</div><div class="modal-field-value">⏱️ ${c.sonTespitZamani ? new Date(c.sonTespitZamani).toLocaleString('tr-TR') : '-'} | Süre: ${c.sureSn ? c.sureSn + ' sn' : '-'}</div></div>
+                        <div class="modal-field"><div class="modal-field-label">Hareket Durumu (MTI)</div><div class="modal-field-value">${c.mti ? '🏃 Hareketli Unsur (Araç/Konvoy)' : '🏢 Sabit İstasyon / Karargah'}</div></div>
+                        <div class="modal-field"><div class="modal-field-label">Hedef Kaynağı</div><div class="modal-field-value">🎯 ${c.hedefKaynagi || '-'}</div></div>
+                    </div>
+
+                    <!-- Frekans Listesi -->
+                    <div style="margin-top:10px;">
+                        <h4 style="font-family:var(--font-display); font-size:12px; color:var(--accent-cyan); margin-bottom:4px;">📻 MUHABERE FREKANS LİSTESİ (SABİT / ATLAMALI FHSS)</h4>
+                        <table class="modal-table">
+                            <thead><tr><th>Frekans Tipi</th><th>Min Frekans (MHz)</th><th>Max Frekans (MHz)</th></tr></thead>
+                            <tbody>${freqRows}</tbody>
+                        </table>
+                    </div>
+
+                    <!-- Operatör ve Onay İzi -->
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
+                        <div class="modal-field">
+                            <div class="modal-field-label">Operatör İstihbarat Notu</div>
+                            <div class="modal-field-value" style="color:var(--accent-amber); font-style:italic;">"${c.operatorNotu || 'Not girilmedi.'}"</div>
+                        </div>
+                        <div class="modal-field">
+                            <div class="modal-field-label">Onay İzi &amp; Kullanıcı</div>
+                            <div class="modal-field-value" style="color:var(--accent-green);">${c.onaylayanKullanici || 'Onay Bekliyor'} - "${c.onayNotu || 'Açıklama yok'}"</div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('emission-detail-modal').style.display = 'flex';
+            } catch (err) {
+                console.error("Comint modal error:", err);
+            }
+        }
+
         async function showEmissionDetailModal(id) {
             try {
                 const res = await fetch(`/api/v1/tactical/emissions/${id}`);
