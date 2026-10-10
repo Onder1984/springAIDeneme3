@@ -37,3 +37,9 @@ logging:
     com.c2.ew: DEBUG
     org.springframework.ai: INFO
     org.hibernate.SQL: WARN
+
+tactical:
+  streamer:
+    enabled: true
+    interval-ms: 5000
+    batch-size: 6

@@ -153,22 +153,22 @@ public class DataInitializer implements CommandLineRunner {
             if (rnd.nextBoolean()) {
                 fList.add(new FrequencyEntry("DEGISKEN_JITTER", baseFreq + 200, baseFreq + 400));
             }
-            e.setMinFrekansMhz(fList.stream().mapToDouble(FrequencyEntry::minFrekansMhz).min().orElse(baseFreq));
-            e.setMaxFrekansMhz(fList.stream().mapToDouble(FrequencyEntry::maxFrekansMhz).max().orElse(baseFreq + 100));
+            e.setMinFrekansMhz(fList.stream().mapToDouble(item -> item.minFrekansMhz()).min().orElse(baseFreq));
+            e.setMaxFrekansMhz(fList.stream().mapToDouble(item -> item.maxFrekansMhz()).max().orElse(baseFreq + 100));
             e.setFrekansListesiJson(objectMapper.writeValueAsString(fList));
 
             double basePri = 400.0 + rnd.nextInt(1600);
             List<PriEntry> priList = new ArrayList<>();
             priList.add(new PriEntry(rnd.nextBoolean() ? "KADEMELI" : "SABIT", basePri, basePri + rnd.nextInt(200)));
-            e.setMinPriMicroSec(priList.stream().mapToDouble(PriEntry::minPriMicroSec).min().orElse(basePri));
-            e.setMaxPriMicroSec(priList.stream().mapToDouble(PriEntry::maxPriMicroSec).max().orElse(basePri + 200));
+            e.setMinPriMicroSec(priList.stream().mapToDouble(item -> item.minPriMicroSec()).min().orElse(basePri));
+            e.setMaxPriMicroSec(priList.stream().mapToDouble(item -> item.maxPriMicroSec()).max().orElse(basePri + 200));
             e.setPriListesiJson(objectMapper.writeValueAsString(priList));
 
             double basePw = 0.5 + rnd.nextDouble() * 5.0;
             List<PwEntry> pwList = new ArrayList<>();
             pwList.add(new PwEntry(rnd.nextBoolean() ? "MODULASYONLU" : "SABIT", basePw, basePw + rnd.nextDouble() * 2.0));
-            e.setMinPwMicroSec(pwList.stream().mapToDouble(PwEntry::minPwMicroSec).min().orElse(basePw));
-            e.setMaxPwMicroSec(pwList.stream().mapToDouble(PwEntry::maxPwMicroSec).max().orElse(basePw + 1.0));
+            e.setMinPwMicroSec(pwList.stream().mapToDouble(item -> item.minPwMicroSec()).min().orElse(basePw));
+            e.setMaxPwMicroSec(pwList.stream().mapToDouble(item -> item.maxPwMicroSec()).max().orElse(basePw + 1.0));
             e.setPwListesiJson(objectMapper.writeValueAsString(pwList));
 
             double baseAtp = (1.5 + rnd.nextDouble() * 6.0) * 1_000_000.0;

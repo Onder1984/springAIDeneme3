@@ -16,13 +16,22 @@ import java.time.Instant;
     @Index(name = "idx_emi_pri_range", columnList = "min_pri_micro_sec, max_pri_micro_sec"),
     @Index(name = "idx_emi_pw_range", columnList = "min_pw_micro_sec, max_pw_micro_sec"),
     @Index(name = "idx_emi_atp_range", columnList = "min_atp_micro_sec, max_atp_micro_sec"),
-    @Index(name = "idx_emi_son_tespit", columnList = "son_tespit_zamani")
+    @Index(name = "idx_emi_son_tespit", columnList = "son_tespit_zamani"),
+    @Index(name = "idx_emi_kayit_tipi", columnList = "kayit_tipi"),
+    @Index(name = "idx_emi_kestirim_id", columnList = "kestirim_id")
 })
 public class TacticalEmissionEntity {
 
     @Id
     @Column(name = "emission_id", length = 64)
     private String id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kayit_tipi", length = 32)
+    private KayitTipi kayitTipi = KayitTipi.KESTIRIM_ELIPS;
+
+    @Column(name = "kestirim_id", length = 64)
+    private String kestirimId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "veri_kaynagi", length = 32, nullable = false)
@@ -347,4 +356,10 @@ public class TacticalEmissionEntity {
 
     public String getOnayNotu() { return onayNotu; }
     public void setOnayNotu(String onayNotu) { this.onayNotu = onayNotu; }
+
+    public KayitTipi getKayitTipi() { return kayitTipi; }
+    public void setKayitTipi(KayitTipi kayitTipi) { this.kayitTipi = kayitTipi; }
+
+    public String getKestirimId() { return kestirimId; }
+    public void setKestirimId(String kestirimId) { this.kestirimId = kestirimId; }
 }

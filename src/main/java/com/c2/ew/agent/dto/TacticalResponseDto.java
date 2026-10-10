@@ -1,22 +1,15 @@
 package com.c2.ew.agent.dto;
 
 import java.util.List;
-import java.util.Map;
 
 /**
- * Taktik Operasyonel Yanıt DTO'su (Çift Çıktı Modeli + LLM Telemetri Logları + Sayfalama)
+ * Taktik Operasyonel Yanıt DTO'su (Metinsel Taktik Brifing + LLM Telemetri Logları)
  */
 public record TacticalResponseDto(
     String operationalBriefing,
-    Map<String, Object> tacticalGeoJson,
-    List<String> executionLogs,
-    PaginationMetadata pagination
+    List<String> executionLogs
 ) {
-    public TacticalResponseDto(String operationalBriefing, Map<String, Object> tacticalGeoJson, List<String> executionLogs) {
-        this(operationalBriefing, tacticalGeoJson, executionLogs, null);
-    }
-
-    public TacticalResponseDto(String operationalBriefing, Map<String, Object> tacticalGeoJson) {
-        this(operationalBriefing, tacticalGeoJson, List.of(), null);
+    public TacticalResponseDto(String operationalBriefing) {
+        this(operationalBriefing, List.of());
     }
 }

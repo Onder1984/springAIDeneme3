@@ -44,5 +44,8 @@ public record TacticalEmissionSummaryDto(
     String ucakKuyrukNumarasi,
     String operatorNotu,
     String onaylayanKullanici,
-    String onayNotu
+    String onayNotu,
+    String sonTespitZamaniFormatted,
+    String kayitTipi,
+    String kestirimId
 ) {}

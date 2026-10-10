@@ -60,5 +60,8 @@ public record TacticalEmissionDetailDto(
     List<AtpEntry> atpListesi,
     String operatorNotu,
     String onaylayanKullanici,
-    String onayNotu
+    String onayNotu,
+    String kayitTipi,
+    String kestirimId,
+    List<String> iliskiliLobIdListesi
 ) {}

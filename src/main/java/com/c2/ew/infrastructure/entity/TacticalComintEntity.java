@@ -16,13 +16,22 @@ import java.time.Instant;
     @Index(name = "idx_com_cagri_adi", columnList = "cagri_adi"),
     @Index(name = "idx_com_karsi_cagri_adi", columnList = "karsi_cagri_adi"),
     @Index(name = "idx_com_freq_range", columnList = "min_frekans_mhz, max_frekans_mhz"),
-    @Index(name = "idx_com_son_tespit", columnList = "son_tespit_zamani")
+    @Index(name = "idx_com_son_tespit", columnList = "son_tespit_zamani"),
+    @Index(name = "idx_com_kayit_tipi", columnList = "kayit_tipi"),
+    @Index(name = "idx_com_kestirim_id", columnList = "kestirim_id")
 })
 public class TacticalComintEntity {
 
     @Id
     @Column(name = "comint_id", length = 64)
     private String id; // Örn: COM-2001
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kayit_tipi", length = 32)
+    private KayitTipi kayitTipi = KayitTipi.KESTIRIM_ELIPS;
+
+    @Column(name = "kestirim_id", length = 64)
+    private String kestirimId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "veri_kaynagi", length = 32, nullable = false)
@@ -268,4 +277,10 @@ public class TacticalComintEntity {
 
     public String getOnayNotu() { return onayNotu; }
     public void setOnayNotu(String onayNotu) { this.onayNotu = onayNotu; }
+
+    public KayitTipi getKayitTipi() { return kayitTipi; }
+    public void setKayitTipi(KayitTipi kayitTipi) { this.kayitTipi = kayitTipi; }
+
+    public String getKestirimId() { return kestirimId; }
+    public void setKestirimId(String kestirimId) { this.kestirimId = kestirimId; }
 }

@@ -37,5 +37,8 @@ public record TacticalComintSummaryDto(
     Double maxFrekansMhz,
     String operatorNotu,
     String onaylayanKullanici,
-    String onayNotu
+    String onayNotu,
+    String sonTespitZamaniFormatted,
+    String kayitTipi,
+    String kestirimId
 ) {}

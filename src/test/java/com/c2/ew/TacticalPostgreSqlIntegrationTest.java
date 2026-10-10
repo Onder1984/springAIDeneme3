@@ -2,11 +2,10 @@ package com.c2.ew;
 
 import com.c2.ew.agent.dto.TacticalComintDetailDto;
 import com.c2.ew.agent.dto.TacticalComintSummaryDto;
-import com.c2.ew.agent.dto.TacticalEmissionDetailDto;
 import com.c2.ew.agent.dto.TacticalEmissionSummaryDto;
+import com.c2.ew.agent.dto.TacticalQueryResult;
 import com.c2.ew.agent.tools.ComintEmissionTools;
 import com.c2.ew.agent.tools.RadarEmissionTools;
-import com.c2.ew.domain.model.PagedResult;
 import com.c2.ew.infrastructure.entity.TacticalComintEntity;
 import com.c2.ew.infrastructure.repository.TacticalComintJpaRepository;
 import com.c2.ew.infrastructure.repository.TacticalEmissionJpaRepository;
@@ -54,7 +53,7 @@ public class TacticalPostgreSqlIntegrationTest {
     @Test
     @DisplayName("Frekans Aralığı (Interval Overlap) sorgulaması doğru çalışmalıdır")
     void testFrequencyRangeOverlapQuery() {
-        PagedResult<TacticalEmissionSummaryDto> xBand = emissionTools.queryEmissionsPaged(
+        TacticalQueryResult<TacticalEmissionSummaryDto> xBand = emissionTools.queryEmissions(
             null, null, null, null, null, null, null,
             8000.0, 12000.0, null,
             null, null, null, null, null, null,
@@ -62,8 +61,8 @@ public class TacticalPostgreSqlIntegrationTest {
         );
 
         assertNotNull(xBand);
-        assertFalse(xBand.items().isEmpty(), "8000-12000 MHz aralığında hedef bulunmalıdır.");
-        for (TacticalEmissionSummaryDto dto : xBand.items()) {
+        assertFalse(xBand.kayitlar().isEmpty(), "8000-12000 MHz aralığında hedef bulunmalıdır.");
+        for (TacticalEmissionSummaryDto dto : xBand.kayitlar()) {
             assertTrue(dto.minFrekansMhz() <= 12000.0 && dto.maxFrekansMhz() >= 8000.0,
                 "Hedef aralık kesişim kuralına uymalıdır: " + dto.id());
         }
@@ -93,12 +92,12 @@ public class TacticalPostgreSqlIntegrationTest {
         assertNotNull(volgaNet);
         assertFalse(volgaNet.isEmpty(), "VOLGA telsiz ağı hedefleri bulunmalıdır.");
 
-        PagedResult<TacticalComintSummaryDto> vhfPaged = comintTools.queryComintEmissionsPaged(
+        TacticalQueryResult<TacticalComintSummaryDto> vhfResult = comintTools.queryComintEmissions(
             null, null, null, "VHF", null, null, null, null, null,
             30.0, 250.0, null, null, 1, 10
         );
-        assertNotNull(vhfPaged);
-        assertFalse(vhfPaged.items().isEmpty(), "VHF bandında muhabere yayını bulunmalıdır.");
+        assertNotNull(vhfResult);
+        assertFalse(vhfResult.kayitlar().isEmpty(), "VHF bandında muhabere yayını bulunmalıdır.");
     }
 
     @Test
@@ -115,5 +114,48 @@ public class TacticalPostgreSqlIntegrationTest {
         assertNotNull(detail.lisan());
         assertNotNull(detail.frekansListesi());
     }
-}
 
+    @Test
+    @DisplayName("Radar Esnek Aralık, Bölge ve Zaman Aralığı sorgulaması doğru çalışmalıdır")
+    void testRadarFlexibleRangeAndRegionQuery() {
+        TacticalQueryResult<TacticalEmissionSummaryDto> result = emissionTools.queryEmissions(
+            null, null, null, null, null, "Ege", null, null, null,
+            null, null, null, null, null, null, null, null, null,
+            -80.0, 0.0, 1.0, 1000.0, "SON_48_SAAT", null,
+            20
+        );
+        assertNotNull(result);
+        for (TacticalEmissionSummaryDto dto : result.kayitlar()) {
+            boolean inEge = (dto.hedefYerBilgisi() != null && dto.hedefYerBilgisi().toLowerCase().contains("ege")) ||
+                            (dto.hedefMevziBilgisi() != null && dto.hedefMevziBilgisi().toLowerCase().contains("ege"));
+            assertTrue(inEge, "Hedef Ege bölgesinde olmalıdır: " + dto.id());
+        }
+    }
+
+    @Test
+    @DisplayName("COMINT Esnek Aralık, Bölge ve Zaman Aralığı sorgulaması doğru çalışmalıdır")
+    void testComintFlexibleRangeAndRegionQuery() {
+        TacticalQueryResult<TacticalComintSummaryDto> result = comintTools.queryComintEmissions(
+            null, null, null, null, null, null, null, null, "Akdeniz", null,
+            null, null, -100.0, 0.0, 1.0, 1000.0, "SON_48_SAAT", null,
+            20
+        );
+        assertNotNull(result);
+        for (TacticalComintSummaryDto dto : result.kayitlar()) {
+            assertTrue(dto.hedefYerBilgisi() != null && dto.hedefYerBilgisi().toLowerCase().contains("akdeniz"),
+                "Muhabere hedefi Akdeniz bölgesinde olmalıdır: " + dto.id());
+        }
+    }
+
+    @Test
+    @DisplayName("Tüm Radar ve COMINT kayıtları Tablo için eksiksiz getirilebilmelidir")
+    void testGetAllRecordsForTables() {
+        List<TacticalEmissionSummaryDto> allEmissions = emissionTools.getAllEmissions();
+        assertNotNull(allEmissions);
+        assertTrue(allEmissions.size() >= 150, "En az 150 radar emisyonu olmalıdır.");
+
+        List<TacticalComintSummaryDto> allComints = comintTools.getAllComints();
+        assertNotNull(allComints);
+        assertTrue(allComints.size() >= 100, "En az 100 muhabere kaydı olmalıdır.");
+    }
+}

@@ -32,3 +32,9 @@ target/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+### Frontend & Logs ###
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+*.log

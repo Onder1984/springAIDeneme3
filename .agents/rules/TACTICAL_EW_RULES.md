@@ -1,57 +1,65 @@
 # Taktik C2 Elektronik Harp (EW) & Büyük Veri Kuralları
 
-Bu dosya, `AntigravitySpringAIDeneme2` projesinin mimari standartlarını, büyük veri koruma kurallarını ve geliştirme yönergelerini belirler.
+Bu dosya, `AntigravitySpringAIDeneme2` projesinin temel mimari standartlarını, büyük veri koruma kurallarını ve geliştirme yönergelerini belirler.
 
 ---
 
-## 1. MİMARİ VE ÇALIŞMA ALTYAPISI
+## 📌 GRUP A: Mimari, Altyapı ve Veri Kalıcılığı
 
-- **Dil ve Çatı:** Java 21 LTS, Spring Boot 3.3.13, Spring Data JPA, Spring AI 1.1.8 (Google GenAI).
-- **Veritabanı:** Docker üzerinde çalışan `postgis/postgis:16-3.4` (PostgreSQL 16 + PostGIS 3.4).
-- **Port:** Uygulama `8081` portunda çalışır (İlk faz in-memory projesi ile çakışmayı önlemek için).
-- **Veri Kalıcılığı (Data Persistence):**
-  - Docker Compose içinde `tactical_ew_postgres_data` isimli kalıcı named volume tanımlıdır.
-  - `spring.jpa.hibernate.ddl-auto: update` kullanılır; tablolar asla silinmez/sıfırlanmaz.
-  - `DataInitializer.java` başlangıçta mevcut kayıtları kontrol eder; veritabanında veri varsa asla ezmez ve mükerrer eklemez.
-- **Türkçe Karakter / JVM Locale Kuralı:**
-  - Google GenAI JSON şemalarında `type` alanının `"INTEGER"` ve `"STRING"` olması zorunludur.
-  - Türkçe yerel ayarında `i.toUpperCase() -> 'İ'` dönüştüğü için Google API 400 Bad Request verir.
-  - Bu sebeple `TacticalEwApplication.java` içinde `Locale.setDefault(Locale.ENGLISH)` ve `.mvn/jvm.config` içinde `-Duser.language=en -Duser.country=US` ayarları kalıcı olarak korunmalıdır.
+1. **Kalıcı PostgreSQL & Docker Volume:**
+   - Docker konteyneri kapansa bile `tactical_ew_postgres_data` volume'ü ile veriler korunur.
+   - Hibernate `ddl-auto: update` modunda çalışır; tablolar asla silinmez/sıfırlanmaz.
+
+2. **Akıllı Veri Başlatıcı (`DataInitializer`):**
+   - Sistem açılışında veritabanını sayar; kayıtlar mevcutsa veriyi ezmez, mükerrer veri üretmez (`VERİ KALICILIĞI AKTİF`).
+
+3. **JVM Dil Standartı (`Locale.ENGLISH`):**
+   - Google GenAI API'nin JSON şemalarındaki `INTEGER`/`STRING` tiplerinin Türkçe karakter dönüşümünden (`i -> İ`) dolayı 400 hatası vermesini engellemek için sistem dili ASCII/İngilizce'ye sabitlenir.
 
 ---
 
-## 2. BÜYÜK VERİ & LLM SAVUNMA MEKANİZMASI (DEFENSIVE TOOLING)
+## 📌 GRUP B: Büyük Veri & LLM Koruma Kalkanı (Defensive Tooling)
 
-Veritabanında 150 adet taktik Fix ve 5.000 adet ham LOB sinyali bulunmaktadır:
-1. **Makro Sorularda Doğrudan SQL Agregasyonu:**
-   - *"Genel durum nedir?"*, *"Bant dağılımı ver"* gibi sorularda satır satır veri çekilmez.
-   - `RadarEmissionTools.getTacticalSummaryStats()` ve `countEmitterLobs()` araçları çağrılır; veritabanı motoru `COUNT` ve `GROUP BY` ile milisaniyede özet döner.
-2. **Öncelikli Tehdit Sıralaması (Top-K Ceiling):**
-   - *"Kritik hedefleri listele"* dendiğinde `RadarEmissionTools.queryPriorityEmitters(limit=15)` çağrılır.
-   - En yüksek tehdit seviyesine (Ku/X-Band, canlılık, hata payı) göre en kritik 15 hedef çekilir; modelin context penceresi şişirilmez.
-3. **Güvenli Sayfalama (`PagedResult<T>`) ve Çift Yönlü Sayfalama (Dual Pagination):**
-   - **Yöntem 1 (Ekran Butonu):** Kullanıcı arayüzde doğrudan butonlara (`[Önceki]`, `[Sonraki 15 Hedefi Getir]`) basarak sayfalar arası geçiş yapabilir. Sağ paneldeki radar çekmecesinde 150 radar 15'erli sayfalar halinde anında taranabilir.
-   - **Yöntem 2 (Doğal Dil / Multi-Turn):** Kullanıcı *"bana sonraki sayfayı da ver"*, *"devamını getir"* veya *"sıradaki hedefleri göster"* dediğinde Gemini `getNextPageOfFixes()` / `getNextPageOfLobs()` araçlarını çağırır.
-   - Önceki filtreler `ConcurrentHashMap` tabanlı `SESSION_STATES` oturum hafızasında güvenle saklanır, filtreler unutulmadan bir sonraki sayfa (page + 1) veya önceki sayfa (page - 1) getirilir.
+4. **Makro Sorularda Doğrudan SQL Agregasyonu:**
+   - *"Genel durum nedir?"*, *"Bant dağılımı ver"* gibi sorularda tüm veri belleğe çekilmez; veritabanında `COUNT` ve `GROUP BY` çalıştıran makro istatistik araçları (`getTacticalMacroStats`, `getComintMacroStats`) kullanılır.
 
----
+5. **Öncelikli Tehdit Tavanı (Top-K Ceiling):**
+   - *"Tehditleri listele"* dendiğinde modelin context penceresini şişirmemek için en kritik ilk 15 hedef (`queryPriorityThreats`, `queryPriorityComintThreats`) çekilir.
 
-## 3. ASKERİ DOĞRULUK VE BRİFİNG STANDARTLARI
+6. **Dinamik Parametre Temizleme (`cleanParam`):**
+   - Modelin gönderdiği `"ALL"`, `"TÜMÜ"`, `"*"` gibi serbest metinler SQL için `null`a dönüştürülür, böylece sorguların boş dönmesi engellenir.
 
-- **Determinizm:** Model asla kafasından koordinat veya istatistik uyduramaz; her bilgi tool çağrısı ile kanıtlanmalıdır.
-- **Hata Elipsi Sınıflandırması:**
-  - `semiMajorAxisMeters <= 1500m`: Yüksek Doğruluklu / Teyitli Atış Kontrol.
-  - `semiMajorAxisMeters > 4000m`: Düşük Doğruluklu / Şüpheli / İlave Tarama Gerekir.
-- **Genel Durum Yanıt Formatı (4 Ana Başlık):**
-  1. `## OPERASYONEL ÖZET`
-  2. `## ÖNCELİKLİ TEHDİTLER VE DOĞRULUK DEĞERLENDİRMESİ`
-  3. `## AÇIKTA KALAN LOB HATLAR VE SENSÖR YÜKLERİ`
-  4. `## HAREKÂT ÖNERİLERİ`
+7. **Çift Yönlü Sayfalama Motoru (Dual Pagination):**
+   - Kullanıcı butonla (`[Sonraki Sayfa ➔]`) veya doğal dille (*"devamını ver"*, *"sonraki sayfayı getir"*) gezinme yapabilir.
+   - Önceki filtreler oturum hafızasında (`SESSION_STATES` / `ConcurrentHashMap`) güvenle saklanır, operatör filtreleri tekrar yazmak zorunda kalmaz.
 
 ---
 
-## 4. İNTERAKTİF GRAFİK YETENEĞİ (CHART.JS PROTOKOLÜ)
+## 📌 GRUP C: Veri Ayrımı ve Askeri Analiz Kuralları
 
-Kullanıcı görselleştirme veya grafik istediğinde, yanıtın sonuna geçerli bir ` ```json:chart ` kod bloğu eklenir:
-- Desteklenen tipler: `doughnut`, `pie`, `bar`, `radar`, `line`.
-- Veriler sahadan toplanan gerçek SQL istatistikleriyle beslenir.
+8. **Kesin Radar ve Muhabere Ayrımı:**
+   - Veritabanında Radar ve COMINT kayıtları vardır.
+   - Yapılan sorgularda radar ya da muhabere açıkça belirtilmez ise ikisi için de sorgu atılabilir (müşterek sorgulama).
+   - Ancak radar ya da muhabere diye açıkça belirtilirse sorgulama yalnızca o alana uygun araçlar ile yapılır.
+
+9. **Askeri Determinizm:**
+   - Model asla kafasından koordinat, frekans, radar adı veya telsiz çağrı adı uyduramaz; her iddia bir tool çağrısına dayanmak zorundadır.
+
+10. **Aralık Kesişimi (Interval Overlap):**
+    - Frekans ve diğer sayısal sorgularda tekil eşitlik yerine min-max aralık kesişim mantığı (`minA <= maxB && maxA >= minB`) uygulanır.
+
+---
+
+## 📌 GRUP D: Çıktı Formatı ve Kullanıcı Arayüzü Standartları
+
+12. **Zengin Markdown Tabloları:**
+    - Tüm listeler ve parametreler okunaklı Markdown Tabloları (`| ... |`) ve hiyerarşik askeri başlıklar halinde sunulur. Grafik ve harita çizimleri kesinlikle yoktur.
+
+13. **Tıklanabilir Parametre Köprüleri:**
+    - Yanıtlarda geçen hedef ID'leri (`[EMI-xxxx]`, `[COM-xxxx]`) formatında sunularak arayüzde 37 ve 30 parametreli detay pencerelerini tetikler.
+
+14. **SIGINT/EW Doktrini: Ham Kerteriz (HAM_LOB) ve Kestirim (KESTIRIM_ELIPS) Ayrımı:**
+    - **HAM_LOB (Line of Bearing / Kerteriz):** Tekil algılayıcı/DF istasyonunun yön ölçümüdür. Hedef yayın konumu (enlem, boylam, elips eksenleri ve oryantasyon) KESİNLİKLE NULL'dur. Yalnızca algılayıcı konumu ve kerteriz açısı bulunur.
+    - **KESTIRIM_ELIPS (Cross-Fix / Kestirim Elipsi):** Birden fazla LOB'un kesiştirilmesiyle hesaplanmış hedef konum elipsidir (enlem, boylam, yarı-büyük/küçük eksen ve oryantasyon doludur).
+    - **LOB-Kestirim İlişkisi:** Kestirime katkı sunan LOB'lar `kestirim_id` üzerinden o kestirimin ID'sini tutar. Henüz kestirime girmemiş başıboş LOB'larda `kestirim_id` boştur (NULL). Kestirim detay penceresi ilgili tüm katkı veren LOB'ları listeler ve çift yönlü navigasyon sağlar.
+

@@ -43,5 +43,8 @@ public record TacticalComintDetailDto(
     List<MuhabereFrekansEntry> frekansListesi,
     String operatorNotu,
     String onaylayanKullanici,
-    String onayNotu
+    String onayNotu,
+    String kayitTipi,
+    String kestirimId,
+    List<String> iliskiliLobIdListesi
 ) {}
