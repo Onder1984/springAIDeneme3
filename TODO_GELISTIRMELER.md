@@ -107,3 +107,27 @@ Operatörün belirttiği gerçekçi Elektronik Harp ve SIGINT doktrini sisteme k
    - Radar ve COMINT tablolarına `[KESTİRİM]` ve `[HAM LOB]` etiketleri ile `Kayıt Niteliği` filtre açılır menüsü eklendi.
    - Detay çekmecesinde (`DetailDrawer`) doktrin panelleri geliştirildi: Kestirim incelenirken katkı veren LOB'lar tıklanabilir etiketler olarak listelenmekte; bir LOB incelenirken bağlı olduğu kestirime doğrudan tıklanarak geçiş yapılabilmektedir.
 
+---
+
+## 📌 TODO-05: Türkçe Karakter (Collation) Mimarisi ve Kategorik Alanlarda Enum Dönüşümü Değerlendirmesi
+
+### 1. Belirtilen Sorun ve Kök Neden
+* **Sorun:** Radar filtresinde veya aramalarda *"Erken İhbar"* seçildiğinde, veritabanında 7.000+ kayıt olmasına rağmen 0 kayıt dönmesi.
+* **Kök Neden:** 
+  1. PostgreSQL veritabanı Windows varsayılan collation'ı (`English_United States.1252`) ile açıldığı için `LOWER('Erken İhbar')` fonksiyonunun büyük noktalı `'İ'` harfini (`0xC4 0xB0`) küçük `'i'` harfine dönüştürememesi.
+  2. Java'nın varsayılan İngilizce Locale altında `"İ"` harfini küçük harfe çevirirken Unicode decomposed combining dot (`i` + `\u0307`) üretmesi, bunun da veritabanındaki tekil `i` karakteriyle bayt düzeyinde uyuşmaması.
+
+### 2. Uygulanan Güncel Durum (Geçici / Veritabanı ICU Çözümü - Yol B)
+* PostgreSQL 18'in yerleşik ICU motoru kullanılarak `tactical_emissions` ve `tactical_comint` tablolarındaki tüm metin kolonları `COLLATE "tr-TR-x-icu"` ile güncellendi.
+* Java tarafında (`RadarEmissionTools`) aranan metin normalizasyonu eklendi.
+* **Test Sonucu:** Arayüzden *"Erken İhbar"* seçildiğinde **7.292 adet kayıt** eksiksiz ve anında listelenmektedir.
+
+### 3. İleride Tekrar Değerlendirilecek Mimari Kararlar:
+1. **Yol A (Savunma Sanayii / NATO Standardı - Enum Dönüşümü):**
+   - Taktik görevlerin serbest String (`"Erken İhbar"`) yerine `RadarGorevi` enum'ına (`ERKEN_IHBAR`, `ATIS_KONTROL`, `HEDEF_TAKIP`, `ARAMA`) dönüştürülmesi.
+   - Veritabanında `VARCHAR` enum kodu tutulup, ekranda operatöre Türkçe başlık gösterilmesi.
+   - **Avantajı:** İşletim sistemi (Windows/Linux), Docker, PostgreSQL collation ve harf dönüştürme mekanizmalarından tamamen bağımsız, %100 deterministik ve hatasız mimari.
+2. **Yol B (Mevcut ICU Collation Devamı):**
+   - `tr-TR-x-icu` collation'ının büyük veri hacimlerinde (500K+ kayıt) B-Tree indeks performansı ve bellek kullanımının izlenmesi.
+
+

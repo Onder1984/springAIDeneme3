@@ -8,14 +8,14 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: tactical_ew_db
+      POSTGRES_DB: tactical_ew_db_3
       POSTGRES_USER: ew_admin
       POSTGRES_PASSWORD: ew_secret_password
     volumes:
       # Verilerin silinmemesi için kalıcı Docker named volume (Named Volume Persistence)
       - tactical_ew_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ew_admin -d tactical_ew_db"]
+      test: ["CMD-SHELL", "pg_isready -U ew_admin -d tactical_ew_db_3"]
       interval: 5s
       timeout: 5s
       retries: 10
