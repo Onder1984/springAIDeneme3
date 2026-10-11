@@ -51,7 +51,12 @@ public class ComintEmissionTools {
         return logs;
     }
 
+    private static final Locale TR_LOCALE = Locale.forLanguageTag("tr-TR");
 
+    private String toTrLower(String val) {
+        if (val == null) return "";
+        return val.trim().toLowerCase(TR_LOCALE);
+    }
 
     private final TacticalComintJpaRepository comintRepo;
     private final ObjectMapper objectMapper;
@@ -349,7 +354,7 @@ public class ComintEmissionTools {
             }
 
             if (search != null && !search.isBlank()) {
-                String pattern = "%" + search.trim().toLowerCase() + "%";
+                String pattern = "%" + toTrLower(search) + "%";
                 Predicate matchId = cb.like(cb.lower(root.get("id")), pattern);
                 Predicate matchCagri = cb.like(cb.lower(root.get("cagriAdi")), pattern);
                 Predicate matchKarsi = cb.like(cb.lower(root.get("karsiCagriAdi")), pattern);
@@ -359,11 +364,11 @@ public class ComintEmissionTools {
             }
 
             if (cagriAdi != null && !cagriAdi.isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("cagriAdi")), "%" + cagriAdi.trim().toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("cagriAdi")), "%" + toTrLower(cagriAdi) + "%"));
             }
 
             if (karsiCagriAdi != null && !karsiCagriAdi.isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("karsiCagriAdi")), "%" + karsiCagriAdi.trim().toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("karsiCagriAdi")), "%" + toTrLower(karsiCagriAdi) + "%"));
             }
 
             TeshisKimlik tk = normalizeTeshis(teshis);
@@ -378,7 +383,7 @@ public class ComintEmissionTools {
             }
 
             if (lisan != null && !lisan.isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("lisan")), "%" + lisan.trim().toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("lisan")), "%" + toTrLower(lisan) + "%"));
             }
 
             HaberlesmeSekli hs = normalizeHaberlesmeSekli(haberlesme);
@@ -408,7 +413,7 @@ public class ComintEmissionTools {
                 predicates.add(cb.lessThanOrEqualTo(root.get("genlikDbm"), maxGenlik));
             }
             if (bolge != null && !bolge.isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("hedefYerBilgisi")), "%" + bolge.trim().toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("hedefYerBilgisi")), "%" + toTrLower(bolge) + "%"));
             }
             if (protokol != null && !protokol.isBlank()) {
                 try {
@@ -967,13 +972,13 @@ public class ComintEmissionTools {
             }
 
             if (cagri != null) {
-                Predicate byCagri = cb.like(cb.lower(root.get("cagriAdi")), "%" + cagri.toLowerCase() + "%");
-                Predicate byKarsi = cb.like(cb.lower(root.get("karsiCagriAdi")), "%" + cagri.toLowerCase() + "%");
+                Predicate byCagri = cb.like(cb.lower(root.get("cagriAdi")), "%" + toTrLower(cagri) + "%");
+                Predicate byKarsi = cb.like(cb.lower(root.get("karsiCagriAdi")), "%" + toTrLower(cagri) + "%");
                 predicates.add(cb.or(byCagri, byKarsi));
             }
 
             if (bolge != null) {
-                predicates.add(cb.like(cb.lower(root.get("hedefYerBilgisi")), "%" + bolge.toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("hedefYerBilgisi")), "%" + toTrLower(bolge) + "%"));
             }
 
             if (mti != null) {

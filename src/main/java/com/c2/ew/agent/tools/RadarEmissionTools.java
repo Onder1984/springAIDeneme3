@@ -50,14 +50,18 @@ public class RadarEmissionTools {
     }
 
     private static final ThreadLocal<List<String>> CALL_LOGS = ThreadLocal.withInitial(ArrayList::new);
+    private static final Locale TR_LOCALE = Locale.forLanguageTag("tr-TR");
+
+    private String toTrLower(String val) {
+        if (val == null) return "";
+        return val.trim().toLowerCase(TR_LOCALE);
+    }
 
     public static List<String> drainCallLogs() {
         List<String> logs = new ArrayList<>(CALL_LOGS.get());
         CALL_LOGS.get().clear();
         return logs;
     }
-
-
 
     private final TacticalEmissionJpaRepository emissionRepo;
     private final TacticalComintJpaRepository comintRepo;
@@ -236,7 +240,7 @@ public class RadarEmissionTools {
             }
 
             if (search != null && !search.isBlank()) {
-                String pattern = "%" + search.trim().toLowerCase() + "%";
+                String pattern = "%" + toTrLower(search) + "%";
                 Predicate matchId = cb.like(cb.lower(root.get("id")), pattern);
                 Predicate matchRadar = cb.like(cb.lower(root.get("radarAdi")), pattern);
                 Predicate matchMevzi = cb.like(cb.lower(root.get("hedefMevziBilgisi")), pattern);
@@ -252,7 +256,7 @@ public class RadarEmissionTools {
             }
 
             if (gorev != null && !gorev.isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("radarGorevi")), "%" + gorev.trim().toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("radarGorevi")), "%" + toTrLower(gorev) + "%"));
             }
 
             PlatformOrtami po = normalizePlatformOrtami(platform);
@@ -295,14 +299,14 @@ public class RadarEmissionTools {
                 predicates.add(cb.lessThanOrEqualTo(root.get("genlikDbm"), maxGenlik));
             }
             if (bolge != null && !bolge.isBlank()) {
-                String bp = "%" + bolge.trim().toLowerCase() + "%";
+                String bp = "%" + toTrLower(bolge) + "%";
                 predicates.add(cb.or(
                     cb.like(cb.lower(root.get("hedefYerBilgisi")), bp),
                     cb.like(cb.lower(root.get("hedefMevziBilgisi")), bp)
                 ));
             }
             if (hss != null && !hss.isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("hss")), "%" + hss.trim().toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("hss")), "%" + toTrLower(hss) + "%"));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -776,19 +780,19 @@ public class RadarEmissionTools {
             }
 
             if (radarAdi != null) {
-                predicates.add(cb.like(cb.lower(root.get("radarAdi")), "%" + radarAdi.toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("radarAdi")), "%" + toTrLower(radarAdi) + "%"));
             }
 
             if (radarGorevi != null) {
-                predicates.add(cb.like(cb.lower(root.get("radarGorevi")), "%" + radarGorevi.toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("radarGorevi")), "%" + toTrLower(radarGorevi) + "%"));
             }
 
             if (hss != null) {
-                predicates.add(cb.like(cb.lower(root.get("hss")), "%" + hss.toLowerCase() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("hss")), "%" + toTrLower(hss) + "%"));
             }
 
             if (bolge != null) {
-                String b = "%" + bolge.toLowerCase() + "%";
+                String b = "%" + toTrLower(bolge) + "%";
                 Predicate inYer = cb.like(cb.lower(root.get("hedefYerBilgisi")), b);
                 Predicate inMevzi = cb.like(cb.lower(root.get("hedefMevziBilgisi")), b);
                 predicates.add(cb.or(inYer, inMevzi));

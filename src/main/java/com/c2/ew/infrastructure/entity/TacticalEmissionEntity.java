@@ -43,7 +43,7 @@ public class TacticalEmissionEntity {
     @Column(name = "ust_birlik_ref", length = 128)
     private String ustBirlikRef;
 
-    @Column(name = "eh_unsuru", length = 128)
+    @Column(name = "eh_unsuru", length = 128, columnDefinition = "varchar(128) collate \"tr-TR-x-icu\"")
     private String ehUnsuru;
 
     @Column(name = "yon")
@@ -74,10 +74,10 @@ public class TacticalEmissionEntity {
     @Column(name = "yayin_orientation_degrees")
     private Double yayinOrientationDegrees;
 
-    @Column(name = "hedef_yer_bilgisi", length = 256)
+    @Column(name = "hedef_yer_bilgisi", length = 256, columnDefinition = "varchar(256) collate \"tr-TR-x-icu\"")
     private String hedefYerBilgisi;
 
-    @Column(name = "hedef_mevzi_bilgisi", length = 128)
+    @Column(name = "hedef_mevzi_bilgisi", length = 128, columnDefinition = "varchar(128) collate \"tr-TR-x-icu\"")
     private String hedefMevziBilgisi;
 
     @Enumerated(EnumType.STRING)
@@ -102,10 +102,10 @@ public class TacticalEmissionEntity {
     @Column(name = "pulse_cw", length = 32)
     private PulseCw pulseCw;
 
-    @Column(name = "radar_gorevi", length = 128)
+    @Column(name = "radar_gorevi", length = 128, columnDefinition = "varchar(128) collate \"tr-TR-x-icu\"")
     private String radarGorevi;
 
-    @Column(name = "radar_adi", length = 128)
+    @Column(name = "radar_adi", length = 128, columnDefinition = "varchar(128) collate \"tr-TR-x-icu\"")
     private String radarAdi;
 
     @Enumerated(EnumType.STRING)
@@ -136,7 +136,7 @@ public class TacticalEmissionEntity {
     @Column(name = "sure_sn")
     private Double sureSn;
 
-    @Column(name = "hss", length = 128)
+    @Column(name = "hss", length = 128, columnDefinition = "varchar(128) collate \"tr-TR-x-icu\"")
     private String hss;
 
     @Column(name = "taciz")
@@ -189,13 +189,13 @@ public class TacticalEmissionEntity {
     @Column(name = "atp_listesi_json", columnDefinition = "text")
     private String atpListesiJson;
 
-    @Column(name = "operator_notu", columnDefinition = "text")
+    @Column(name = "operator_notu", columnDefinition = "text collate \"tr-TR-x-icu\"")
     private String operatorNotu;
 
     @Column(name = "onaylayan_kullanici", length = 128)
     private String onaylayanKullanici;
 
-    @Column(name = "onay_notu", columnDefinition = "text")
+    @Column(name = "onay_notu", columnDefinition = "text collate \"tr-TR-x-icu\"")
     private String onayNotu;
 
     public TacticalEmissionEntity() {}

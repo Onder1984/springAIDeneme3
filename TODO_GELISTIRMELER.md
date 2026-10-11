@@ -109,18 +109,19 @@ Operatörün belirttiği gerçekçi Elektronik Harp ve SIGINT doktrini sisteme k
 
 ---
 
-## 📌 TODO-05: Türkçe Karakter (Collation) Mimarisi ve Kategorik Alanlarda Enum Dönüşümü Değerlendirmesi
+## ✅ TAMAMLANDI - TODO-05: Türkçe Karakter (Collation) Mimarisi ve ICU Desteği
 
 ### 1. Belirtilen Sorun ve Kök Neden
-* **Sorun:** Radar filtresinde veya aramalarda *"Erken İhbar"* seçildiğinde, veritabanında 7.000+ kayıt olmasına rağmen 0 kayıt dönmesi.
+* **Sorun:** Radar filtresinde veya aramalarda *"Erken İhbar"* seçildiğinde, veritabanında yüz binlerce kayıt olmasına rağmen 0 kayıt dönmesi.
 * **Kök Neden:** 
-  1. PostgreSQL veritabanı Windows varsayılan collation'ı (`English_United States.1252`) ile açıldığı için `LOWER('Erken İhbar')` fonksiyonunun büyük noktalı `'İ'` harfini (`0xC4 0xB0`) küçük `'i'` harfine dönüştürememesi.
+  1. PostgreSQL veritabanı Docker'da varsayılan collation (`en_US.utf8`) ile açıldığı ve tablolardaki metin kolonlarında özel bir collation tanımlanmadığı için `lower('I')` ve `lower('İ')` dönüşümlerinin Türk alfabesine uymaması.
   2. Java'nın varsayılan İngilizce Locale altında `"İ"` harfini küçük harfe çevirirken Unicode decomposed combining dot (`i` + `\u0307`) üretmesi, bunun da veritabanındaki tekil `i` karakteriyle bayt düzeyinde uyuşmaması.
 
-### 2. Uygulanan Güncel Durum (Geçici / Veritabanı ICU Çözümü - Yol B)
-* PostgreSQL 18'in yerleşik ICU motoru kullanılarak `tactical_emissions` ve `tactical_comint` tablolarındaki tüm metin kolonları `COLLATE "tr-TR-x-icu"` ile güncellendi.
-* Java tarafında (`RadarEmissionTools`) aranan metin normalizasyonu eklendi.
-* **Test Sonucu:** Arayüzden *"Erken İhbar"* seçildiğinde **7.292 adet kayıt** eksiksiz ve anında listelenmektedir.
+### 2. Uygulanan Çözüm (PostgreSQL ICU Collation + JPA Entity + Java Normalizasyon)
+* PostgreSQL yerleşik ICU motoru kullanılarak `tactical_emissions` ve `tactical_comint` tablolarındaki tüm metin kolonları `COLLATE "tr-TR-x-icu"` ile güncellendi.
+* `TacticalEmissionEntity` ve `TacticalComintEntity` JPA entity sınıflarında ilgili `@Column` alanlarına `columnDefinition = "... collate \"tr-TR-x-icu\""` tanımlandı.
+* Java tarafında (`RadarEmissionTools` ve `ComintEmissionTools`) Türkçe arama normalizasyonu (`Locale.forLanguageTag("tr-TR")`) eklendi.
+* **Canlı Test Sonucu:** Arayüzden *"Erken İhbar"* seçildiğinde **337.244 adet kayıt**, *"Atış Kontrol"* seçildiğinde **90.038 adet kayıt** eksiksiz ve anında listelenmektedir. Tüm büyük/küçük harf varyasyonları (%100) doğrulanmıştır.
 
 ### 3. İleride Tekrar Değerlendirilecek Mimari Kararlar:
 1. **Yol A (Savunma Sanayii / NATO Standardı - Enum Dönüşümü):**

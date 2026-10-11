@@ -43,7 +43,7 @@ public class TacticalComintEntity {
     @Column(name = "ust_birlik_ref", length = 128)
     private String goreviIcraEdenUstBirlik;
 
-    @Column(name = "eh_unsuru", length = 128)
+    @Column(name = "eh_unsuru", length = 128, columnDefinition = "varchar(128) collate \"tr-TR-x-icu\"")
     private String goreviIcraEdenEhUnsuru;
 
     @Column(name = "yon")
@@ -74,7 +74,7 @@ public class TacticalComintEntity {
     @Column(name = "yayin_orientation_degrees")
     private Double yayinOrientationDegrees;
 
-    @Column(name = "hedef_yer_bilgisi", length = 256)
+    @Column(name = "hedef_yer_bilgisi", length = 256, columnDefinition = "varchar(256) collate \"tr-TR-x-icu\"")
     private String hedefYerBilgisi;
 
     @Enumerated(EnumType.STRING)
@@ -84,7 +84,7 @@ public class TacticalComintEntity {
     @Column(name = "veri_girisi_yapan_birlik", length = 50)
     private String veriGirisiYapanBirlik;
 
-    @Column(name = "lisan", length = 64)
+    @Column(name = "lisan", length = 64, columnDefinition = "varchar(64) collate \"tr-TR-x-icu\"")
     private String lisan;
 
     @Enumerated(EnumType.STRING)
@@ -119,10 +119,10 @@ public class TacticalComintEntity {
     @Column(name = "alt_esik_seviyesi_dbm")
     private Double altEsikSeviyesiDbm;
 
-    @Column(name = "cagri_adi", length = 128)
+    @Column(name = "cagri_adi", length = 128, columnDefinition = "varchar(128) collate \"tr-TR-x-icu\"")
     private String cagriAdi;
 
-    @Column(name = "karsi_cagri_adi", length = 128)
+    @Column(name = "karsi_cagri_adi", length = 128, columnDefinition = "varchar(128) collate \"tr-TR-x-icu\"")
     private String karsiCagriAdi;
 
     @Column(name = "ilk_tespit_zamani")
@@ -149,13 +149,13 @@ public class TacticalComintEntity {
     @Column(name = "frekans_listesi_json", columnDefinition = "text")
     private String frekansListesiJson;
 
-    @Column(name = "operator_notu", columnDefinition = "text")
+    @Column(name = "operator_notu", columnDefinition = "text collate \"tr-TR-x-icu\"")
     private String operatorNotu;
 
     @Column(name = "onaylayan_kullanici", length = 128)
     private String onaylayanKullanici;
 
-    @Column(name = "onay_notu", columnDefinition = "text")
+    @Column(name = "onay_notu", columnDefinition = "text collate \"tr-TR-x-icu\"")
     private String onayNotu;
 
     public TacticalComintEntity() {}
