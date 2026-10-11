@@ -18,6 +18,11 @@ import com.c2.ew.infrastructure.repository.TacticalComintJpaRepository;
 import com.c2.ew.util.GeoUtils;
 import com.c2.ew.domain.model.GeoPoint;
 
+import com.c2.ew.agent.dto.TacticalDistributionDto;
+import com.c2.ew.agent.dto.TacticalWaveformTimelineDto;
+import com.c2.ew.agent.service.TacticalDistributionService;
+import com.c2.ew.agent.service.TacticalWaveformTimelineService;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.Predicate;
@@ -66,15 +71,21 @@ public class RadarEmissionTools {
     private final TacticalEmissionJpaRepository emissionRepo;
     private final TacticalComintJpaRepository comintRepo;
     private final ObjectMapper objectMapper;
+    private final TacticalDistributionService distributionService;
+    private final TacticalWaveformTimelineService timelineService;
 
     public RadarEmissionTools(
         TacticalEmissionJpaRepository emissionRepo,
         TacticalComintJpaRepository comintRepo,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        TacticalDistributionService distributionService,
+        TacticalWaveformTimelineService timelineService
     ) {
         this.emissionRepo = emissionRepo;
         this.comintRepo = comintRepo;
         this.objectMapper = objectMapper;
+        this.distributionService = distributionService;
+        this.timelineService = timelineService;
     }
 
     private String cleanParam(String val) {
@@ -219,7 +230,7 @@ public class RadarEmissionTools {
             if ("pri".equalsIgnoreCase(sf)) sf = "minPriMicroSec";
             if ("pw".equalsIgnoreCase(sf)) sf = "minPwMicroSec";
             Set<String> validFields = Set.of(
-                "id", "teshisKimlik", "radarAdi", "radarGorevi", "hedefYerBilgisi", 
+                "id", "spotNo", "teshisKimlik", "radarAdi", "radarGorevi", "hedefYerBilgisi", 
                 "hedefMevziBilgisi", "hss", "platformOrtami", "platformTipi", 
                 "minFrekansMhz", "maxFrekansMhz", "minPriMicroSec", "maxPriMicroSec", 
                 "minPwMicroSec", "maxPwMicroSec", "genlikDbm", "sureSn", "sonTespitZamani", "taciz", "etUygulamaDurumu", "kayitTipi"
@@ -242,12 +253,13 @@ public class RadarEmissionTools {
             if (search != null && !search.isBlank()) {
                 String pattern = "%" + toTrLower(search) + "%";
                 Predicate matchId = cb.like(cb.lower(root.get("id")), pattern);
+                Predicate matchSpot = cb.like(cb.lower(root.get("spotNo")), pattern);
                 Predicate matchRadar = cb.like(cb.lower(root.get("radarAdi")), pattern);
                 Predicate matchMevzi = cb.like(cb.lower(root.get("hedefMevziBilgisi")), pattern);
                 Predicate matchYer = cb.like(cb.lower(root.get("hedefYerBilgisi")), pattern);
                 Predicate matchHss = cb.like(cb.lower(root.get("hss")), pattern);
                 Predicate matchGorev = cb.like(cb.lower(root.get("radarGorevi")), pattern);
-                predicates.add(cb.or(matchId, matchRadar, matchMevzi, matchYer, matchHss, matchGorev));
+                predicates.add(cb.or(matchId, matchSpot, matchRadar, matchMevzi, matchYer, matchHss, matchGorev));
             }
 
             TeshisKimlik tk = normalizeTeshis(teshis);
@@ -1376,4 +1388,40 @@ public class RadarEmissionTools {
         }
     }
 
+    @Tool(description = "Radar veya Muhabere (COMINT) yayınlarının kategorik/sayısal olmayan özelliklerine göre pasta/donut (Pie Chart) dağılım istatistiklerini döner. " +
+        "source: 'RADAR' veya 'COMINT'. " +
+        "criterion: RADAR için 'POLARIZASYON', 'MODULASYON', 'TESHIS', 'GOREV', 'PLATFORM', 'HEDEF_YER', 'MEVZI', 'FREKANS_BANDI', 'SPOT_NO'. " +
+        "COMINT için 'HABERLESME_SEKLI', 'LISAN', 'BANT' (VHF/HF), 'MODULASYON', 'TESHIS', 'PROTOKOL', 'CALISMA_SEKLI', 'HEDEF_YER', 'CAGRI_ADI'. " +
+        "timeRange: 'SON_1_SAAT', 'SON_6_SAAT', 'SON_24_SAAT' veya 'ALL'. " +
+        "Operatör polarizasyon, modülasyon, lisan, haberleşme şekli, teşhis, hedef yer/mevzi veya frekans bandı dağılımı sorduğunda BU ARACI ÇAĞIR.")
+    public TacticalDistributionDto getTacticalDistribution(String source, String criterion, String timeRange) {
+        CALL_LOGS.get().add(String.format("Tool Çağrısı: getTacticalDistribution(source=%s, criterion=%s, timeRange=%s) çalıştırıldı.", source, criterion, timeRange));
+        return distributionService.getDistribution(source, criterion, timeRange, 8);
+    }
+
+    public TacticalDistributionDto getTacticalDistribution(String source, String criterion) {
+        return getTacticalDistribution(source, criterion, "ALL");
+    }
+
+    public TacticalDistributionDto getTacticalDistribution(String criterion) {
+        return getTacticalDistribution("RADAR", criterion, "ALL");
+    }
+
+    @Tool(description = "Belirli bir Radar Spot No (örn: 'SP048', 'SP037') veya Muhabere Çağrı Adı (örn: 'VOLGA-01', 'OMAR-11') için frekans, PRI, PW ve sinyal gücünün zaman içindeki değişimini (Waveform Timeline) döner. " +
+        "source: 'RADAR' veya 'COMINT'. " +
+        "targetKey: Radar için 'SP048', 'SP037' vb. Spot Numarası; Muhabere için 'VOLGA-01', 'OMAR-11' vb. Çağrı Adı. " +
+        "timeRange: 'SON_1_SAAT', 'SON_6_SAAT', 'SON_24_SAAT' veya 'ALL'. " +
+        "Operatör bir radarın/hedefin zaman içindeki frekans değişimi, PRI değişimi, mod atlamaları veya dalga formu grafiğini sorduğunda BU ARACI ÇAĞIR.")
+    public TacticalWaveformTimelineDto getTacticalWaveformTimeline(String source, String targetKey, String timeRange) {
+        CALL_LOGS.get().add(String.format("Tool Çağrısı: getTacticalWaveformTimeline(source=%s, targetKey=%s, timeRange=%s) çalıştırıldı.", source, targetKey, timeRange));
+        return timelineService.getTimeline(source, targetKey, timeRange, 200);
+    }
+
+    public TacticalWaveformTimelineDto getTacticalWaveformTimeline(String source, String targetKey) {
+        return getTacticalWaveformTimeline(source, targetKey, "ALL");
+    }
+
+    public TacticalWaveformTimelineDto getTacticalWaveformTimeline(String targetKey) {
+        return getTacticalWaveformTimeline("RADAR", targetKey, "ALL");
+    }
 }

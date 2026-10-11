@@ -62,27 +62,39 @@ public interface TacticalComintJpaRepository extends JpaRepository<TacticalComin
         Pageable pageable
     );
 
-    @Query("SELECT c.cagriAdi, c.karsiCagriAdi, COUNT(c), MAX(c.lisan), MAX(c.haberlesmeSekli), MAX(c.tip) " +
-           "FROM TacticalComintEntity c " +
-           "WHERE (:cagri IS NULL OR LOWER(c.cagriAdi) LIKE LOWER(CONCAT('%', :cagri, '%'))) " +
-           "  AND (:karsi IS NULL OR LOWER(c.karsiCagriAdi) LIKE LOWER(CONCAT('%', :karsi, '%'))) " +
-           "  AND c.cagriAdi IS NOT NULL AND TRIM(c.cagriAdi) <> '' " +
-           "  AND c.karsiCagriAdi IS NOT NULL AND TRIM(c.karsiCagriAdi) <> '' " +
-           "GROUP BY c.cagriAdi, c.karsiCagriAdi ORDER BY COUNT(c) DESC")
+    @Query(value = "SELECT c.cagri_adi, c.karsi_cagri_adi, COUNT(*) as total, COALESCE(SUM(c.sure_sn), 0.0) as top_sn, " +
+           "       COUNT(*) FILTER (WHERE c.tip = 'VHF') as vhf_adet, " +
+           "       COUNT(*) FILTER (WHERE c.tip = 'HF') as hf_adet, " +
+           "       COUNT(*) FILTER (WHERE c.haberlesme_sekli = 'KRIPTO') as kripto_adet, " +
+           "       COUNT(*) FILTER (WHERE c.haberlesme_sekli = 'SES') as ses_adet, " +
+           "       COUNT(*) FILTER (WHERE c.haberlesme_sekli = 'VERI') as veri_adet, " +
+           "       COALESCE(MODE() WITHIN GROUP (ORDER BY c.lisan), '-') as baskin_lisan " +
+           "FROM tactical_comint c " +
+           "WHERE (:cagri IS NULL OR LOWER(c.cagri_adi) LIKE LOWER(CONCAT('%', :cagri, '%'))) " +
+           "  AND (:karsi IS NULL OR LOWER(c.karsi_cagri_adi) LIKE LOWER(CONCAT('%', :karsi, '%'))) " +
+           "  AND c.cagri_adi IS NOT NULL AND TRIM(c.cagri_adi) <> '' " +
+           "  AND c.karsi_cagri_adi IS NOT NULL AND TRIM(c.karsi_cagri_adi) <> '' " +
+           "GROUP BY c.cagri_adi, c.karsi_cagri_adi ORDER BY COUNT(*) DESC", nativeQuery = true)
     List<Object[]> getFilteredCallsignInteractionMatrix(
         @Param("cagri") String cagri,
         @Param("karsi") String karsi,
         Pageable pageable
     );
 
-    @Query("SELECT c.cagriAdi, c.karsiCagriAdi, COUNT(c), MAX(c.lisan), MAX(c.haberlesmeSekli), MAX(c.tip) " +
-           "FROM TacticalComintEntity c " +
-           "WHERE (:cagri IS NULL OR LOWER(c.cagriAdi) LIKE LOWER(CONCAT('%', :cagri, '%'))) " +
-           "  AND (:karsi IS NULL OR LOWER(c.karsiCagriAdi) LIKE LOWER(CONCAT('%', :karsi, '%'))) " +
-           "  AND c.sonTespitZamani >= :baslangic AND c.sonTespitZamani <= :bitis " +
-           "  AND c.cagriAdi IS NOT NULL AND TRIM(c.cagriAdi) <> '' " +
-           "  AND c.karsiCagriAdi IS NOT NULL AND TRIM(c.karsiCagriAdi) <> '' " +
-           "GROUP BY c.cagriAdi, c.karsiCagriAdi ORDER BY COUNT(c) DESC")
+    @Query(value = "SELECT c.cagri_adi, c.karsi_cagri_adi, COUNT(*) as total, COALESCE(SUM(c.sure_sn), 0.0) as top_sn, " +
+           "       COUNT(*) FILTER (WHERE c.tip = 'VHF') as vhf_adet, " +
+           "       COUNT(*) FILTER (WHERE c.tip = 'HF') as hf_adet, " +
+           "       COUNT(*) FILTER (WHERE c.haberlesme_sekli = 'KRIPTO') as kripto_adet, " +
+           "       COUNT(*) FILTER (WHERE c.haberlesme_sekli = 'SES') as ses_adet, " +
+           "       COUNT(*) FILTER (WHERE c.haberlesme_sekli = 'VERI') as veri_adet, " +
+           "       COALESCE(MODE() WITHIN GROUP (ORDER BY c.lisan), '-') as baskin_lisan " +
+           "FROM tactical_comint c " +
+           "WHERE (:cagri IS NULL OR LOWER(c.cagri_adi) LIKE LOWER(CONCAT('%', :cagri, '%'))) " +
+           "  AND (:karsi IS NULL OR LOWER(c.karsi_cagri_adi) LIKE LOWER(CONCAT('%', :karsi, '%'))) " +
+           "  AND c.son_tespit_zamani >= :baslangic AND c.son_tespit_zamani <= :bitis " +
+           "  AND c.cagri_adi IS NOT NULL AND TRIM(c.cagri_adi) <> '' " +
+           "  AND c.karsi_cagri_adi IS NOT NULL AND TRIM(c.karsi_cagri_adi) <> '' " +
+           "GROUP BY c.cagri_adi, c.karsi_cagri_adi ORDER BY COUNT(*) DESC", nativeQuery = true)
     List<Object[]> getFilteredCallsignInteractionMatrixWithTimeRange(
         @Param("cagri") String cagri,
         @Param("karsi") String karsi,
@@ -91,23 +103,35 @@ public interface TacticalComintJpaRepository extends JpaRepository<TacticalComin
         Pageable pageable
     );
 
-    @Query("SELECT c.cagriAdi, c.karsiCagriAdi, COUNT(c), MAX(c.lisan), MAX(c.haberlesmeSekli), MAX(c.tip) " +
-           "FROM TacticalComintEntity c " +
-           "WHERE c.cagriAdi IS NOT NULL AND TRIM(c.cagriAdi) <> '' " +
-           "  AND c.karsiCagriAdi IS NOT NULL AND TRIM(c.karsiCagriAdi) <> '' " +
-           "GROUP BY c.cagriAdi, c.karsiCagriAdi ORDER BY COUNT(c) DESC")
+    @Query(value = "SELECT c.cagri_adi, c.karsi_cagri_adi, COUNT(*) as total, COALESCE(SUM(c.sure_sn), 0.0) as top_sn, " +
+           "       COUNT(*) FILTER (WHERE c.tip = 'VHF') as vhf_adet, " +
+           "       COUNT(*) FILTER (WHERE c.tip = 'HF') as hf_adet, " +
+           "       COUNT(*) FILTER (WHERE c.haberlesme_sekli = 'KRIPTO') as kripto_adet, " +
+           "       COUNT(*) FILTER (WHERE c.haberlesme_sekli = 'SES') as ses_adet, " +
+           "       COUNT(*) FILTER (WHERE c.haberlesme_sekli = 'VERI') as veri_adet, " +
+           "       COALESCE(MODE() WITHIN GROUP (ORDER BY c.lisan), '-') as baskin_lisan " +
+           "FROM tactical_comint c " +
+           "WHERE c.cagri_adi IS NOT NULL AND TRIM(c.cagri_adi) <> '' " +
+           "  AND c.karsi_cagri_adi IS NOT NULL AND TRIM(c.karsi_cagri_adi) <> '' " +
+           "GROUP BY c.cagri_adi, c.karsi_cagri_adi ORDER BY COUNT(*) DESC", nativeQuery = true)
     List<Object[]> getCallsignInteractionMatrix(Pageable pageable);
 
     default List<Object[]> getCallsignInteractionMatrix() {
         return getCallsignInteractionMatrix(Pageable.unpaged());
     }
 
-    @Query("SELECT c.cagriAdi, c.karsiCagriAdi, COUNT(c), MAX(c.lisan), MAX(c.haberlesmeSekli), MAX(c.tip) " +
-           "FROM TacticalComintEntity c " +
-           "WHERE c.sonTespitZamani >= :baslangic AND c.sonTespitZamani <= :bitis " +
-           "  AND c.cagriAdi IS NOT NULL AND TRIM(c.cagriAdi) <> '' " +
-           "  AND c.karsiCagriAdi IS NOT NULL AND TRIM(c.karsiCagriAdi) <> '' " +
-           "GROUP BY c.cagriAdi, c.karsiCagriAdi ORDER BY COUNT(c) DESC")
+    @Query(value = "SELECT c.cagri_adi, c.karsi_cagri_adi, COUNT(*) as total, COALESCE(SUM(c.sure_sn), 0.0) as top_sn, " +
+           "       COUNT(*) FILTER (WHERE c.tip = 'VHF') as vhf_adet, " +
+           "       COUNT(*) FILTER (WHERE c.tip = 'HF') as hf_adet, " +
+           "       COUNT(*) FILTER (WHERE c.haberlesme_sekli = 'KRIPTO') as kripto_adet, " +
+           "       COUNT(*) FILTER (WHERE c.haberlesme_sekli = 'SES') as ses_adet, " +
+           "       COUNT(*) FILTER (WHERE c.haberlesme_sekli = 'VERI') as veri_adet, " +
+           "       COALESCE(MODE() WITHIN GROUP (ORDER BY c.lisan), '-') as baskin_lisan " +
+           "FROM tactical_comint c " +
+           "WHERE c.son_tespit_zamani >= :baslangic AND c.son_tespit_zamani <= :bitis " +
+           "  AND c.cagri_adi IS NOT NULL AND TRIM(c.cagri_adi) <> '' " +
+           "  AND c.karsi_cagri_adi IS NOT NULL AND TRIM(c.karsi_cagri_adi) <> '' " +
+           "GROUP BY c.cagri_adi, c.karsi_cagri_adi ORDER BY COUNT(*) DESC", nativeQuery = true)
     List<Object[]> getCallsignInteractionMatrixWithTimeRange(
         @Param("baslangic") Instant baslangic,
         @Param("bitis") Instant bitis,

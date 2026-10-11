@@ -646,12 +646,11 @@ public class ComintEmissionTools {
         );
     }
 
-    @Tool(description = "Telsiz çağrı adı ve karşı çağrı adı ikililerini (Link Pairs / Konuşma Çiftleri), aralarındaki toplam konuşma ve temas adetlerini zaman aralığına göre döner. " +
+    @Tool(description = "Telsiz çağrı adı ve karşı çağrı adı ikililerini (Link Pairs / Konuşma Çiftleri), aralarındaki toplam konuşma ve temas adetleri ile toplam konuşma süresini (saniye) zaman aralığına göre döner. " +
         "İster sahadaki en çok konuşan tüm telsiz çiftlerini (cagriAdi ve karsiCagriAdi boş bırakılarak), " +
-        "ister belirli bir 'cagriAdi' ve/veya 'karsiCagriAdi' ikilisinin aralarında kaç defa görüştüğünü filtreleyerek döner. " +
+        "ister belirli bir 'cagriAdi' ve/veya 'karsiCagriAdi' ikilisinin aralarında kaç defa görüştüğünü ve toplam süresini filtreleyerek döner. " +
         "Zaman kısıtı (baslangicZamani, bitisZamani veya 'SON_1_SAAT', 'SON_6_SAAT', 'SON_24_SAAT', 'BUGUN' vb.) verilerek belirli bir zaman dilimindeki hareketlenmeler ve konuşma yoğunluğu analiz edilebilir. " +
-        "'Çağrı adı - karşı çağrı adı ikilileri için konuşma adetleri', 'Son 1 saatte/24 saatte kiminle kim ne kadar konuştu?', " +
-        "'X çağrı adı iken Y karşı çağrı adı kaç defa görüşmüş?' sorularında doğrudan BU ARAÇ çağrılmalıdır.")
+        "'Çağrı adı - karşı çağrı adı ikilileri için konuşma adetleri ve süreleri', 'Kim kiminle ne kadar konuştu/ne kadar süre görüştü?', 'Çağrı adı ısı haritası ve komuta ağı' sorularında doğrudan BU ARAÇ çağrılmalıdır.")
     public List<CallsignPairStatsDto> getCallsignPairInteractionStats(
         String cagriAdi,
         String karsiCagriAdi,
@@ -664,12 +663,13 @@ public class ComintEmissionTools {
         String cleanBaslangic = cleanParam(baslangicZamani);
         String cleanBitis = cleanParam(bitisZamani);
 
-        Instant start = parseTime(cleanBaslangic, true);
-        Instant end = parseTime(cleanBitis, false);
-        if (start == null) {
-            start = getTacticalReferenceTime().minus(Duration.ofHours(24));
-        }
-        if (end == null) {
+        Instant start = (cleanBaslangic != null && !cleanBaslangic.equalsIgnoreCase("ALL"))
+            ? parseTime(cleanBaslangic, true)
+            : null;
+        Instant end = (cleanBitis != null && !cleanBitis.equalsIgnoreCase("ALL"))
+            ? parseTime(cleanBitis, false)
+            : null;
+        if (start != null && end == null) {
             end = getTacticalReferenceTime();
         }
 
@@ -694,10 +694,14 @@ public class ComintEmissionTools {
             String cagri = row[0] != null ? row[0].toString() : "-";
             String karsi = row[1] != null ? row[1].toString() : "-";
             long count = row[2] != null ? ((Number) row[2]).longValue() : 0L;
-            String lisan = row[3] != null ? row[3].toString() : "-";
-            String haberlesme = row[4] != null ? row[4].toString() : "-";
-            String tip = row[5] != null ? row[5].toString() : "-";
-            result.add(new CallsignPairStatsDto(cagri, karsi, count, lisan, haberlesme, tip));
+            double sure = row[3] != null ? ((Number) row[3]).doubleValue() : 0.0;
+            long vhf = row[4] != null ? ((Number) row[4]).longValue() : 0L;
+            long hf = row[5] != null ? ((Number) row[5]).longValue() : 0L;
+            long kripto = row[6] != null ? ((Number) row[6]).longValue() : 0L;
+            long ses = row[7] != null ? ((Number) row[7]).longValue() : 0L;
+            long veri = row[8] != null ? ((Number) row[8]).longValue() : 0L;
+            String baskinLisan = row[9] != null ? row[9].toString() : "-";
+            result.add(new CallsignPairStatsDto(cagri, karsi, count, sure, vhf, hf, kripto, ses, veri, baskinLisan));
         }
         return result;
     }
@@ -724,12 +728,13 @@ public class ComintEmissionTools {
     public Map<String, Long> getMostActiveCallsigns(String baslangicZamani, String bitisZamani, Integer limit) {
         String cleanBaslangic = cleanParam(baslangicZamani);
         String cleanBitis = cleanParam(bitisZamani);
-        Instant start = parseTime(cleanBaslangic, true);
-        Instant end = parseTime(cleanBitis, false);
-        if (start == null) {
-            start = getTacticalReferenceTime().minus(Duration.ofHours(24));
-        }
-        if (end == null) {
+        Instant start = (cleanBaslangic != null && !cleanBaslangic.equalsIgnoreCase("ALL"))
+            ? parseTime(cleanBaslangic, true)
+            : null;
+        Instant end = (cleanBitis != null && !cleanBitis.equalsIgnoreCase("ALL"))
+            ? parseTime(cleanBitis, false)
+            : null;
+        if (start != null && end == null) {
             end = getTacticalReferenceTime();
         }
 

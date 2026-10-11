@@ -183,6 +183,11 @@ export default function DetailDrawer({ visible, onClose, type, data, loading, on
                     )}
                   </Descriptions.Item>
                   <Descriptions.Item label="Radar Adı">{data.radarAdi || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Spot No">
+                    {data.spotNo ? (
+                      <Tag color="geekblue" style={{ fontWeight: 700, fontFamily: 'monospace' }}>{data.spotNo}</Tag>
+                    ) : '-'}
+                  </Descriptions.Item>
                   <Descriptions.Item label="Teşhis Kimlik">
                     <Tag color={getTeshisColor(data.teshisKimlik)}>{data.teshisKimlik}</Tag>
                   </Descriptions.Item>

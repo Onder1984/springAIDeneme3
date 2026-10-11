@@ -65,6 +65,12 @@ public class TacticalAgentService {
              * Operatör telsiz trafiğinde hareketlenme, ani artış, saatlik dağılım veya trafik yoğunluğu/surge analizi sorduğunda KESİNLİKLE 'getComintTrafficTrend(cagriAdi, baslangicZamani, bitisZamani)' aracını çağır!
            - Elektronik Taarruz ve Taciz analizi:
              * ET veya taciz raporu için 'queryElectronicAttackAndHarassment()' aracını çağır.
+           - Kategorik Dağılım ve Pasta/Donut (Pie Chart) Analizleri:
+             * Operatör herhangi bir kategorik özellik bazında dağılım, oran, yüzde veya pasta grafiği sorduğunda KESİNLİKLE 'getTacticalDistribution(source, criterion, timeRange)' aracını çağır!
+             * Radar için criterion: 'POLARIZASYON', 'MODULASYON', 'TESHIS', 'GOREV', 'PLATFORM', 'HEDEF_YER', 'MEVZI', 'FREKANS_BANDI'
+             * Muhabere için criterion: 'HABERLESME_SEKLI', 'LISAN', 'BANT' (VHF/HF), 'MODULASYON', 'TESHIS', 'PROTOKOL', 'CALISMA_SEKLI', 'HEDEF_YER'
+             * Zaman kısıtı varsa 'SON_1_SAAT', 'SON_24_SAAT' vb. ilet, yoksa 'ALL' bırak.
+             * Yanıtında sayısal adetleri ve yüzdeleri net bir Markdown tablosu olarak sun, arayüzde sağ panelde interaktif pasta grafiğinin görüntülendiğini belirt.
         3. ARALIKLI VE ESNEK SORGULAMA KURALI (INTERVALS & FILTERS):
            - Operatör frekans (örn. '8500-10000 MHz' veya '150-170 MHz VHF'), PRI (örn. '500-1200 µs'), PW veya ATP aralığı sorduğunda:
              * minFrekansMhz, maxFrekansMhz, minPriMicroSec, maxPriMicroSec vb. parametreleri doldur. Aralık kesişimi uygulanır.
@@ -114,6 +120,23 @@ public class TacticalAgentService {
              * Radar ya da muhabere acikca belirtilmemisse her iki araci da cagirarak sahadaki tum hiyerarsik resmi cikar.
              * Zaman kisiti ('son 1 saat', 'son 24 saat', 'bugun' vb.) belirtilmisse 'zaman' parametresine ('SON_1_SAAT', 'SON_24_SAAT', 'BUGUN') aktar.
              * Ciktida mutlaka sayisal ozet tablosunu (Toplam, Cocuklu/Bagli, Cocuksuz/Basibos, Oranlar), detayli liste tablosunu ve operasyonel taktik degerlendirmeyi sun.
+        9. DAGILIM VE PASTA GRAFIGI (DISTRIBUTION / PIE CHART) ANALIZI:
+           - Operator bir ozelligin dagilimini veya pasta/donut grafigini sordugunda ('polarizasyon dagilimi', 'modulasyon dagilimi', 'haberlesme sekli dagilimi', 'lisan dagilimi', 'teshis dagilimi', 'hedef yer dagilimi', 'hedef mevzi dagilimi', 'NATO frekans bandi dagilimi', 'pasta grafigi', 'dagilim grafigi'):
+             * KESINLIKLE 'getTacticalDistribution(source, criterion, timeRange)' aracini cagir!
+             * source: Soruya gore 'RADAR' veya 'COMINT'.
+             * criterion: Radar icin 'POLARIZASYON', 'MODULASYON', 'TESHIS', 'GOREV', 'PLATFORM', 'HEDEF_YER', 'MEVZI', 'FREKANS_BANDI', 'SPOT_NO'.
+                          Muhabere icin 'HABERLESME_SEKLI', 'LISAN', 'BANT', 'MODULASYON', 'TESHIS', 'PROTOKOL', 'CALISMA_SEKLI', 'HEDEF_YER', 'CAGRI_ADI'.
+             * timeRange: Soruya gore 'SON_1_SAAT', 'SON_6_SAAT', 'SON_24_SAAT' veya 'ALL'.
+             * Yanitinda bulunan toplam sayiyi, kategorilerin adetlerini ve yuzdelerini sik bir Markdown tablosunda ozetle.
+             * Operatore ekrandaki 'Dagitim / Pasta Grafigi' widget'i uzerinden bu verilerin anlik olarak goruntulendigini bildir.
+        10. DALGA FORMU VE ZAMANSAL DEGISIM (WAVEFORM TIMELINE) ANALIZI:
+            - Operator belirli bir radarin (Spot No: orn: 'SP048', 'SP037' vb.) veya muhabereni (Cagri Adi: orn: 'VOLGA-01', 'OMAR-11' vb.) zaman icindeki frekans, PRI, PW ve sinyal gucu degisimini sordugunda:
+              * KESINLIKLE 'getTacticalWaveformTimeline(source, targetKey, timeRange)' aracini cagir!
+              * source: Radar icin 'RADAR', Muhabere icin 'COMINT'.
+              * targetKey: Radar Spot No (orn: 'SP048') veya Cagri Adi ('VOLGA-01').
+              * timeRange: Soruya gore 'SON_1_SAAT', 'SON_6_SAAT', 'SON_24_SAAT' veya 'ALL'.
+              * Yanitinda tespit edilen temas sayisini, ilk ve son frekans/PRI araliklarini, hedefin frekans atlayip atlamadigini (agility) ve mod degisikliklerini ozet bir kronolojik Markdown tablosuyla sun.
+              * Operatore ekrandaki 'Dalga Formu Zaman Cizelgesi' widget'i uzerinden interaktif ECharts cizelgesinde bu temaslarin gorsellestirildigini belirt.
         """;
 
     private final ChatClient chatClient;

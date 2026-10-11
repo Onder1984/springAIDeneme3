@@ -36,6 +36,7 @@ const { Text } = Typography;
 
 const ALL_COLUMN_KEYS = [
   { key: 'id', label: 'Hedef ID' },
+  { key: 'spotNo', label: 'Spot No' },
   { key: 'kayitTipi', label: 'Kayıt Niteliği' },
   { key: 'teshisKimlik', label: 'Teşhis' },
   { key: 'radarAdi', label: 'Radar & Görev' },
@@ -273,16 +274,39 @@ export default function RadarTable({ onSelectEmission, initialFilter }) {
       render: (text) => <Tag color={getTeshisColor(text)}>{text || 'BELİRSİZ'}</Tag>
     },
     {
+      title: 'Spot No',
+      dataIndex: 'spotNo',
+      key: 'spotNo',
+      width: 100,
+      sorter: true,
+      render: (text) => (
+        text ? (
+          <Tag color="geekblue" style={{ fontWeight: 700, fontFamily: 'monospace' }}>
+            {text}
+          </Tag>
+        ) : (
+          <span style={{ color: '#64748b', fontSize: 11 }}>-</span>
+        )
+      )
+    },
+    {
       title: 'Radar & Görev',
       dataIndex: 'radarAdi',
       key: 'radarAdi',
-      width: 180,
+      width: 190,
       sorter: true,
       render: (text, record) => (
         <div>
-          <Text strong style={{ color: '#f1f5f9' }}>{text || 'Bilinmiyor'}</Text>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Text strong style={{ color: '#f1f5f9' }}>{text || 'Bilinmiyor'}</Text>
+            {record.spotNo && (
+              <Tag color="geekblue" size="small" style={{ fontSize: 10, padding: '0 4px', margin: 0, fontWeight: 700 }}>
+                {record.spotNo}
+              </Tag>
+            )}
+          </div>
           {record.radarGorevi && (
-            <div style={{ fontSize: 11, color: '#94a3b8' }}>{record.radarGorevi}</div>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{record.radarGorevi}</div>
           )}
         </div>
       )

@@ -1,13 +1,18 @@
 package com.c2.ew.web;
 
+import com.c2.ew.agent.dto.CallsignPairStatsDto;
 import com.c2.ew.agent.dto.TablePageResponse;
 import com.c2.ew.agent.dto.TacticalComintDetailDto;
 import com.c2.ew.agent.dto.TacticalComintSummaryDto;
+import com.c2.ew.agent.dto.TacticalDistributionDto;
 import com.c2.ew.agent.dto.TacticalEmissionDetailDto;
 import com.c2.ew.agent.dto.TacticalEmissionSummaryDto;
 import com.c2.ew.agent.dto.TacticalQueryRequest;
 import com.c2.ew.agent.dto.TacticalResponseDto;
+import com.c2.ew.agent.dto.TacticalWaveformTimelineDto;
 import com.c2.ew.agent.service.TacticalAgentService;
+import com.c2.ew.agent.service.TacticalDistributionService;
+import com.c2.ew.agent.service.TacticalWaveformTimelineService;
 import com.c2.ew.agent.tools.ComintEmissionTools;
 import com.c2.ew.agent.tools.RadarEmissionTools;
 import org.springframework.http.ResponseEntity;
@@ -24,15 +29,21 @@ public class TacticalController {
     private final TacticalAgentService agentService;
     private final RadarEmissionTools emissionTools;
     private final ComintEmissionTools comintTools;
+    private final TacticalDistributionService distributionService;
+    private final TacticalWaveformTimelineService timelineService;
 
     public TacticalController(
         TacticalAgentService agentService,
         RadarEmissionTools emissionTools,
-        ComintEmissionTools comintTools
+        ComintEmissionTools comintTools,
+        TacticalDistributionService distributionService,
+        TacticalWaveformTimelineService timelineService
     ) {
         this.agentService = agentService;
         this.emissionTools = emissionTools;
         this.comintTools = comintTools;
+        this.distributionService = distributionService;
+        this.timelineService = timelineService;
     }
 
     /**
@@ -57,6 +68,59 @@ public class TacticalController {
     @GetMapping("/comint/stats")
     public ResponseEntity<Map<String, Object>> getComintMacroStats() {
         return ResponseEntity.ok(comintTools.getComintMacroStats());
+    }
+
+    /**
+     * Telsiz Çağrı Adı İletişim Matrisi (ECharts Isı Haritası & Ağ Analizi)
+     */
+    @GetMapping("/comint/callsign-matrix")
+    public ResponseEntity<List<CallsignPairStatsDto>> getCallsignMatrix(
+        @RequestParam(required = false) String cagriAdi,
+        @RequestParam(required = false) String karsiCagriAdi,
+        @RequestParam(required = false) String baslangicZamani,
+        @RequestParam(required = false) String bitisZamani,
+        @RequestParam(defaultValue = "15") Integer limit
+    ) {
+        return ResponseEntity.ok(comintTools.getCallsignPairInteractionStats(
+            cagriAdi, karsiCagriAdi, baslangicZamani, bitisZamani, limit
+        ));
+    }
+
+    /**
+     * Taktik Kategorik Dağılım Analizi (Pie / Donut Chart)
+     */
+    @GetMapping({"/analytics/distribution", "/distribution"})
+    public ResponseEntity<TacticalDistributionDto> getDistribution(
+        @RequestParam(defaultValue = "RADAR") String source,
+        @RequestParam(defaultValue = "TESHIS") String criterion,
+        @RequestParam(required = false) String timeRange,
+        @RequestParam(defaultValue = "8") Integer limit
+    ) {
+        return ResponseEntity.ok(distributionService.getDistribution(source, criterion, timeRange, limit));
+    }
+
+    /**
+     * Taktik Dalga Formu & Zamansal Değişim Analizi (Radar: Spot No, COMINT: Çağrı Adı)
+     */
+    @GetMapping({"/analytics/waveform-timeline", "/waveform-timeline"})
+    public ResponseEntity<TacticalWaveformTimelineDto> getWaveformTimeline(
+        @RequestParam(defaultValue = "RADAR") String source,
+        @RequestParam(required = false) String targetKey,
+        @RequestParam(required = false) String timeRange,
+        @RequestParam(defaultValue = "200") Integer limit
+    ) {
+        return ResponseEntity.ok(timelineService.getTimeline(source, targetKey, timeRange, limit));
+    }
+
+    /**
+     * Taktik Dalga Formu Takip Edilebilir Hedefler Listesi (En aktif Spot No ve Çağrı Adları)
+     */
+    @GetMapping({"/analytics/waveform-targets", "/waveform-targets"})
+    public ResponseEntity<List<TacticalWaveformTimelineDto.AvailableTarget>> getWaveformTargets(
+        @RequestParam(defaultValue = "RADAR") String source
+    ) {
+        boolean isRadar = source == null || !source.equalsIgnoreCase("COMINT");
+        return ResponseEntity.ok(timelineService.getAvailableTargets(isRadar));
     }
 
     /**
