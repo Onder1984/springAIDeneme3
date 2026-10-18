@@ -1,7 +1,5 @@
 package com.c2.ew.web;
 
-import com.c2.ew.agent.dto.analysis.SectorThreatSummaryDto;
-import com.c2.ew.agent.service.TacticalThreatAnalysisService;
 import com.c2.ew.infrastructure.seeder.MassDataSeederService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,26 +11,10 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class TacticalAnalysisController {
 
-    private final TacticalThreatAnalysisService threatAnalysisService;
     private final MassDataSeederService massDataSeederService;
 
-    public TacticalAnalysisController(
-        TacticalThreatAnalysisService threatAnalysisService,
-        MassDataSeederService massDataSeederService
-    ) {
-        this.threatAnalysisService = threatAnalysisService;
+    public TacticalAnalysisController(MassDataSeederService massDataSeederService) {
         this.massDataSeederService = massDataSeederService;
-    }
-
-    /**
-     * Harekât Sahası ve Sektör Tehdit/Niyet Analizi (Kill-Chain F2T2EA & Skolnik/Wiley Analizi)
-     */
-    @GetMapping("/threat-assessment")
-    public ResponseEntity<SectorThreatSummaryDto> getThreatAssessment(
-        @RequestParam(required = false) String bolge
-    ) {
-        SectorThreatSummaryDto result = threatAnalysisService.analyzeSectorThreats(bolge);
-        return ResponseEntity.ok(result);
     }
 
     /**

@@ -20,6 +20,7 @@ import com.c2.ew.domain.model.GeoPoint;
 
 import com.c2.ew.agent.dto.TacticalDistributionDto;
 import com.c2.ew.agent.dto.TacticalWaveformTimelineDto;
+import com.c2.ew.agent.service.RadarCorrelationService;
 import com.c2.ew.agent.service.TacticalDistributionService;
 import com.c2.ew.agent.service.TacticalWaveformTimelineService;
 
@@ -73,19 +74,22 @@ public class RadarEmissionTools {
     private final ObjectMapper objectMapper;
     private final TacticalDistributionService distributionService;
     private final TacticalWaveformTimelineService timelineService;
+    private final RadarCorrelationService correlationService;
 
     public RadarEmissionTools(
         TacticalEmissionJpaRepository emissionRepo,
         TacticalComintJpaRepository comintRepo,
         ObjectMapper objectMapper,
         TacticalDistributionService distributionService,
-        TacticalWaveformTimelineService timelineService
+        TacticalWaveformTimelineService timelineService,
+        RadarCorrelationService correlationService
     ) {
         this.emissionRepo = emissionRepo;
         this.comintRepo = comintRepo;
         this.objectMapper = objectMapper;
         this.distributionService = distributionService;
         this.timelineService = timelineService;
+        this.correlationService = correlationService;
     }
 
     private String cleanParam(String val) {
@@ -617,6 +621,36 @@ public class RadarEmissionTools {
         );
     }
 
+    @Tool(description = "İki radar emisyonunu veya LOB kaydını (id1 ve id2) zaman, frekans, PRI, PW, ATP, hedef yer/mevzi, teşhis, radar adı/görevi, platform ve RF modülasyonu bazında IoU kesişim/birleşim oranlarıyla karşılaştırır. Detaylı tablo değerlendirme raporu döner. 'X ile Y radarını karşılaştır', 'İki radar LOB kaydı birbiriyle uyumlu mu?' gibi sorularda doğrudan BU ARAÇ çağrılmalıdır.")
+    public Map<String, Object> compareRadarEmissions(String id1, String id2) {
+        CALL_LOGS.get().add(String.format("Tool Çağrısı: compareRadarEmissions(id1=%s, id2=%s) çalıştırıldı.", id1, id2));
+        return correlationService.compareEmissions(id1, id2);
+    }
+
+    @Tool(description = "İki radar LOB kaydını (lobId1 ve lobId2) parametrik ve IoU bazında karşılaştırır (compareRadarEmissions ile eşdeğerdir).")
+    public Map<String, Object> compareRadarLobs(String lobId1, String lobId2) {
+        return compareRadarEmissions(lobId1, lobId2);
+    }
+
+    @Tool(description = "Belirli bir radar kaydı veya LOB (targetId) için, seçilen zaman aralığında (timeRange: 'SON_1_SAAT', 'SON_6_SAAT', 'SON_24_SAAT', 'SON_7_GUN', 'ALL') 100 puanlık çok kriterli benzerlik matrisiyle (RF Zarfı ve Alt Tipleri %45, Zaman Kesişimi %10, Zaman Yakınlığı %10, Coğrafya ve Taktik Kimlik %35) sahada en çok benzeyen ilk N radar kaydını (Top-K) ve karşılaştırma tablosunu getirir. " +
+        "Operatör 'bu radara en çok benzeyenleri bul', 'benzer hedefleri listele', '1-to-N benzerlik analizi yap' gibi taleplerde bulunduğunda BU ARACI ÇAĞIR.")
+    public Map<String, Object> findSimilarRadarEmissions(String targetId, String timeRange, Integer limit) {
+        CALL_LOGS.get().add(String.format("Tool Çağrısı: findSimilarRadarEmissions(targetId=%s, timeRange=%s, limit=%s) çalıştırıldı.", targetId, timeRange, limit));
+        return correlationService.findSimilarRadarEmissions(targetId, timeRange, limit);
+    }
+
+    public Map<String, Object> findSimilarRadarEmissions(String targetId, String timeRange) {
+        return findSimilarRadarEmissions(targetId, timeRange, 5);
+    }
+
+    public Map<String, Object> findSimilarRadarEmissions(String targetId) {
+        return findSimilarRadarEmissions(targetId, "SON_24_SAAT", 5);
+    }
+
+    @Tool(description = "Belirli bir LOB veya radar için en çok benzeyen kayıtları bulur (findSimilarRadarEmissions ile eşdeğerdir).")
+    public Map<String, Object> findSimilarRadarLobs(String lobId, String timeRange, Integer limit) {
+        return findSimilarRadarEmissions(lobId, timeRange, limit);
+    }
 
     private TeshisKimlik normalizeTeshis(String val) {
         if (val == null) return null;

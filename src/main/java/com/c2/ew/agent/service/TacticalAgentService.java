@@ -137,6 +137,19 @@ public class TacticalAgentService {
               * timeRange: Soruya gore 'SON_1_SAAT', 'SON_6_SAAT', 'SON_24_SAAT' veya 'ALL'.
               * Yanitinda tespit edilen temas sayisini, ilk ve son frekans/PRI araliklarini, hedefin frekans atlayip atlamadigini (agility) ve mod degisikliklerini ozet bir kronolojik Markdown tablosuyla sun.
               * Operatore ekrandaki 'Dalga Formu Zaman Cizelgesi' widget'i uzerinden interaktif ECharts cizelgesinde bu temaslarin gorsellestirildigini belirt.
+        11. RADAR VE LOB KARŞILAŞTIRMA VE KORELASYON ANALİZİ (IoU / UYUM ORANI):
+            - Operatör iki radar kaydını, kestirimi veya LOB'u karşılaştır, kıyasla, uyum oranlarını incele, aynı hedef olup olmadıklarını değerlendir dediğinde:
+              * 'compareRadarEmissions(id1, id2)' (veya 'compareRadarLobs(lobId1, lobId2)') aracını çağır!
+              * id1 ve id2: Karşılaştırılacak radar/LOB ID'leri (örn: 'EMI-1001', 'EMI-1003').
+              * Araç tarafından üretilen sayısal uyum oranlarını (Kesişim/Birleşim - 1D IoU) ve Markdown tablosunu yanıtında eksiksiz ve doğrudan sun.
+              * Zaman uyumu (çakışma ve aralarındaki yakınlık/boşluk), Frekans/PRI/PW/ATP zarfı ve alt tipler uyumu, metinsel parametrelerin birebir aynılığı (Hedef Yer, Mevzi, Teşhis, Radar Adı, Görevi, Platform Ortamı/Tipi, Modülasyon, Pulse/CW, Polarizasyon) durumunu operatöre açıkla.
+        12. 1-TO-N RADAR BENZERLİK VE KORELASYON ARAMASI (TOP-K BENZERLER):
+            - Operatör belirli bir radar kaydına veya LOB'a (targetId) en çok benzeyen diğer kayıtları bul, benzer hedefleri listele, 1-to-N benzerlik analizi yap dediğinde:
+              * 'findSimilarRadarEmissions(targetId, timeRange, limit)' (veya 'findSimilarRadarLobs') aracını çağır!
+              * targetId: Referans radar ID'si (örn: 'EMI-1001').
+              * timeRange: Soruya göre 'SON_1_SAAT', 'SON_6_SAAT', 'SON_24_SAAT', 'SON_7_GUN' veya 'ALL' (varsayılan 'SON_24_SAAT').
+              * limit: İstenen benzer kayıt sayısı (varsayılan 5).
+              * Araç tarafından üretilen 100 puanlık çok kriterli benzerlik tablosunu, zaman kesişimi ve yakınlığı puanlarını ve en yüksek adayın puan kartını yanıtında net olarak sun.
         """;
 
     private final ChatClient chatClient;

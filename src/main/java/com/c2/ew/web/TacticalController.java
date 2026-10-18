@@ -222,5 +222,31 @@ public class TacticalController {
     public ResponseEntity<TacticalComintDetailDto> getComintDetails(@PathVariable String id) {
         return ResponseEntity.ok(comintTools.getComintDetails(id));
     }
+
+    /**
+     * İki Radar Emisyonu veya LOB Kaydı Karşılaştırma ve Korelasyon Analizi (IoU / Kesişim-Birleşim)
+     */
+    @GetMapping({"/emissions/compare", "/emissions/correlation"})
+    public ResponseEntity<Map<String, Object>> compareRadarEmissions(
+        @RequestParam String id1,
+        @RequestParam String id2
+    ) {
+        return ResponseEntity.ok(emissionTools.compareRadarEmissions(id1, id2));
+    }
+
+    /**
+     * 1-to-N Çok Kriterli Benzerlik Motoru (Belirli bir radara/LOB'a en çok benzeyen kayıtları arama)
+     */
+    @GetMapping({"/emissions/{id}/similar", "/emissions/similar"})
+    public ResponseEntity<Map<String, Object>> findSimilarRadarEmissions(
+        @PathVariable(required = false) String id,
+        @RequestParam(required = false) String targetId,
+        @RequestParam(required = false, defaultValue = "SON_24_SAAT") String timeRange,
+        @RequestParam(required = false, defaultValue = "5") Integer limit
+    ) {
+        String effectiveId = (id != null && !id.isBlank()) ? id : targetId;
+        return ResponseEntity.ok(emissionTools.findSimilarRadarEmissions(effectiveId, timeRange, limit));
+    }
 }
+
 

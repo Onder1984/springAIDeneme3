@@ -3,13 +3,11 @@ import { ConfigProvider, theme, Tabs, Layout, message } from 'antd';
 import {
   MessageOutlined,
   RadarChartOutlined,
-  SecurityScanOutlined,
-  AimOutlined
+  SecurityScanOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import HeaderBar from './components/HeaderBar';
 import CopilotChat from './components/CopilotChat';
-import ThreatAnalysisDashboard from './components/ThreatAnalysisDashboard';
 import RadarTable from './components/RadarTable';
 import ComintTable from './components/ComintTable';
 import DetailDrawer from './components/DetailDrawer';
@@ -96,20 +94,6 @@ export default function App() {
                   <CopilotChat
                     onSelectTarget={(id, type) => handleOpenDetail(id, type)}
                     onNavigateTab={handleNavigateTab}
-                  />
-                )
-              },
-              {
-                key: 'analysis',
-                label: (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px' }}>
-                    <AimOutlined style={{ color: '#ef4444' }} />
-                    🎯 Taktik Tehdit & Niyet Analizi
-                  </span>
-                ),
-                children: (
-                  <ThreatAnalysisDashboard
-                    onSelectEmission={(id, type) => handleOpenDetail(id, type || 'RADAR')}
                   />
                 )
               },
