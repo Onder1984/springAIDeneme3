@@ -86,8 +86,8 @@ export default function App() {
                 key: 'chat',
                 label: (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px' }}>
-                    <MessageOutlined style={{ color: '#38bdf8' }} />
-                    💬 Taktik Copilot
+                    <MessageOutlined style={{ color: '#38bdf8', fontSize: 16 }} />
+                    Taktik Copilot
                   </span>
                 ),
                 children: (
@@ -101,8 +101,8 @@ export default function App() {
                 key: 'radar',
                 label: (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px' }}>
-                    <RadarChartOutlined style={{ color: '#38bdf8' }} />
-                    📡 Radar (ELINT) Tablosu
+                    <RadarChartOutlined style={{ color: '#38bdf8', fontSize: 16 }} />
+                    Radar (ELINT) Tablosu
                   </span>
                 ),
                 children: (
@@ -116,8 +116,8 @@ export default function App() {
                 key: 'comint',
                 label: (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px' }}>
-                    <SecurityScanOutlined style={{ color: '#c084fc' }} />
-                    📻 Muhabere (COMINT) Tablosu
+                    <SecurityScanOutlined style={{ color: '#c084fc', fontSize: 16 }} />
+                    Muhabere (COMINT) Tablosu
                   </span>
                 ),
                 children: (

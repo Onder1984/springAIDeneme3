@@ -18,6 +18,7 @@ import { marked } from 'marked';
 import CallsignHeatmapWidget from './CallsignHeatmapWidget';
 import TacticalDistributionPieWidget from './TacticalDistributionPieWidget';
 import TacticalWaveformTimelineWidget from './TacticalWaveformTimelineWidget';
+import RadarSpectrumOccupancyWidget from './RadarSpectrumOccupancyWidget';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -43,6 +44,7 @@ Aşağıdaki hızlı komutları kullanabilir veya doğal dilde arama yapabilirsi
   const [loading, setLoading] = useState(false);
   const [activeWidget, setActiveWidget] = useState(null); // null | 'CALLSIGN_HEATMAP' | 'PIE_DISTRIBUTION' | 'WAVEFORM_TIMELINE'
   const [distributionConfig, setDistributionConfig] = useState({ source: 'RADAR', criterion: 'TESHIS' });
+  const [occupancyConfig, setOccupancyConfig] = useState({ timeRange: 'SON_24_SAAT', identities: ['DUSMAN'] });
   const [timelineConfig, setTimelineConfig] = useState({ source: 'RADAR', targetKey: 'SP048' });
   const messagesEndRef = useRef(null);
 
@@ -196,6 +198,7 @@ Aşağıdaki hızlı komutları kullanabilir veya doğal dilde arama yapabilirsi
   };
 
   const quickPrompts = [
+    { label: '📊 Düşman Frekans Yoğunluğu (Bar Grafiği)', prompt: 'Düşman radar yayınlarının sabit frekans aralıklarındaki kullanım yoğunluğu ve doluluk oranlarını tablo ve bar grafiği olarak analiz et.' },
     { label: '📈 SP048 Radar Dalga Formu Değişimi', prompt: 'SP048 radarının zaman içindeki frekans, PRI ve mod değişimlerini dalga formu zaman çizelgesinde analiz et.' },
     { label: '📈 VOLGA-01 Muhabere Frekans Değişimi', prompt: 'VOLGA-01 telsiz ağının zaman içindeki frekans ve sinyal gücü değişimini dalga formu çizelgesinde analiz et.' },
     { label: '🔥 Çağrı Adı İletişim Isı Haritası', prompt: 'Hangi çağrı adı kiminle ne kadar konuşmuş analiz et, en aktif telsiz çiftlerini ve toplam konuşma sürelerini çıkar.' },

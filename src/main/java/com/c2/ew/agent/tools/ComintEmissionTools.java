@@ -256,7 +256,7 @@ public class ComintEmissionTools {
         if (v.contains("SON_12_SAAT") || v.contains("12_SAAT")) return isStart ? refTime.minus(Duration.ofHours(12)) : refTime;
         if (v.contains("SON_24_SAAT") || v.contains("24_SAAT") || v.contains("1_GUN")) return isStart ? refTime.minus(Duration.ofDays(1)) : refTime;
         if (v.contains("SON_48_SAAT") || v.contains("48_SAAT") || v.contains("2_GUN")) return isStart ? refTime.minus(Duration.ofDays(2)) : refTime;
-        if (v.contains("SON_1_HAFTA") || v.contains("7_GUN") || v.contains("1_HAFTA")) return isStart ? refTime.minus(Duration.ofDays(7)) : refTime;
+        if (v.contains("SON_1_HAFTA") || v.contains("7_GUN") || v.contains("1_HAFTA") || v.contains("GECEN_HAFTA") || v.contains("HAFTA")) return isStart ? refTime.minus(Duration.ofDays(7)) : refTime;
 
         LocalDate refDate = refTime.atZone(ZoneId.systemDefault()).toLocalDate();
         if (v.contains("BUGUN") || v.contains("TODAY")) {

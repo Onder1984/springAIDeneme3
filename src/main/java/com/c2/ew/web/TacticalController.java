@@ -10,6 +10,8 @@ import com.c2.ew.agent.dto.TacticalEmissionSummaryDto;
 import com.c2.ew.agent.dto.TacticalQueryRequest;
 import com.c2.ew.agent.dto.TacticalResponseDto;
 import com.c2.ew.agent.dto.TacticalWaveformTimelineDto;
+import com.c2.ew.agent.dto.RadarSpectrumOccupancyDto;
+import com.c2.ew.agent.service.RadarSpectrumOccupancyService;
 import com.c2.ew.agent.service.TacticalAgentService;
 import com.c2.ew.agent.service.TacticalDistributionService;
 import com.c2.ew.agent.service.TacticalWaveformTimelineService;
@@ -31,19 +33,22 @@ public class TacticalController {
     private final ComintEmissionTools comintTools;
     private final TacticalDistributionService distributionService;
     private final TacticalWaveformTimelineService timelineService;
+    private final RadarSpectrumOccupancyService spectrumOccupancyService;
 
     public TacticalController(
         TacticalAgentService agentService,
         RadarEmissionTools emissionTools,
         ComintEmissionTools comintTools,
         TacticalDistributionService distributionService,
-        TacticalWaveformTimelineService timelineService
+        TacticalWaveformTimelineService timelineService,
+        RadarSpectrumOccupancyService spectrumOccupancyService
     ) {
         this.agentService = agentService;
         this.emissionTools = emissionTools;
         this.comintTools = comintTools;
         this.distributionService = distributionService;
         this.timelineService = timelineService;
+        this.spectrumOccupancyService = spectrumOccupancyService;
     }
 
     /**
@@ -121,6 +126,19 @@ public class TacticalController {
     ) {
         boolean isRadar = source == null || !source.equalsIgnoreCase("COMINT");
         return ResponseEntity.ok(timelineService.getAvailableTargets(isRadar));
+    }
+
+    /**
+     * Radar Frekans Spektrum Doluluk & Kullanım Yoğunluğu (ECharts Bar Chart & Taktik Tablo)
+     */
+    @GetMapping({"/analytics/spectrum-occupancy", "/spectrum-occupancy"})
+    public ResponseEntity<RadarSpectrumOccupancyDto> getSpectrumOccupancy(
+        @RequestParam(required = false) String timeRange,
+        @RequestParam(required = false) String teshisKimlik,
+        @RequestParam(required = false, defaultValue = "50.0") Double binStepMhz,
+        @RequestParam(required = false, defaultValue = "true") Boolean onlyActive
+    ) {
+        return ResponseEntity.ok(spectrumOccupancyService.calculateOccupancy(timeRange, teshisKimlik, binStepMhz, onlyActive));
     }
 
     /**

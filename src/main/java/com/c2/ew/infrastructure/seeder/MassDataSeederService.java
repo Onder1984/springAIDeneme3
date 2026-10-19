@@ -92,7 +92,6 @@ public class MassDataSeederService {
         Random rnd = new Random(777);
         int inserted = 0;
         Instant now = Instant.now();
-        int baseId = 200000;
 
         while (inserted < total) {
             int currentBatchSize = Math.min(batchSize, total - inserted);
@@ -253,7 +252,6 @@ public class MassDataSeederService {
         Random rnd = new Random(888);
         int inserted = 0;
         Instant now = Instant.now();
-        int baseId = 200000;
 
         while (inserted < total) {
             int currentBatchSize = Math.min(batchSize, total - inserted);

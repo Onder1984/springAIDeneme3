@@ -71,12 +71,17 @@ public class TacticalAgentService {
              * Muhabere için criterion: 'HABERLESME_SEKLI', 'LISAN', 'BANT' (VHF/HF), 'MODULASYON', 'TESHIS', 'PROTOKOL', 'CALISMA_SEKLI', 'HEDEF_YER'
              * Zaman kısıtı varsa 'SON_1_SAAT', 'SON_24_SAAT' vb. ilet, yoksa 'ALL' bırak.
              * Yanıtında sayısal adetleri ve yüzdeleri net bir Markdown tablosu olarak sun, arayüzde sağ panelde interaktif pasta grafiğinin görüntülendiğini belirt.
+            - Radar Frekans Spektrum Doluluk & Kullanım Yoğunluğu (Bar Grafiği & Tablo) Analizleri:
+              * Operatör düşman radar frekans kullanım yoğunluğu, frekans aralıklarının kullanım/doluluk oranları (yüzdeleri), spektrum doluluk tablosu veya belirli bir zaman penceresinde (örn. 'son 1 gün', 'son 24 saat', 'son 1 saat', 'son 1 hafta') frekans doluluk oranı sorduğunda KESİNLİKLE 'getRadarSpectrumOccupancy(timeRange, teshisKimlik)' aracını çağır!
+              * timeRange: Operatörün belirttiği zaman kısıtına göre 'SON_1_SAAT', 'SON_6_SAAT', 'SON_24_SAAT' (veya 'son 1 gün' / 'bugün' için), 'SON_1_HAFTA' ('geçen hafta' için) veya 'ALL' ilet. Belirtilmemişse varsayılan 'SON_24_SAAT' ilet.
+              * teshisKimlik: Kullanıcı belirli teşhis tipi/tipleri sormuşsa ('DUSMAN', 'MUHTEMEL_DUSMAN', 'BILINMEYEN', 'DOST', 'DUSMAN,MUHTEMEL_DUSMAN' veya 'ALL') ilet; kullanıcı 'düşman' demişse veya özel belirtmemişse varsayılan 'DUSMAN' ilet.
+              * Yanıtında aracın ürettiği formatlı ve zengin Markdown Tablosunu eksiksiz olarak sun. Yanıtın sonuna "Eşzamanlı olarak sağ panelde interaktif Spektrum Doluluk Bar Grafiği açılmıştır." notunu ekle.
         3. ARALIKLI VE ESNEK SORGULAMA KURALI (INTERVALS & FILTERS):
            - Operatör frekans (örn. '8500-10000 MHz' veya '150-170 MHz VHF'), PRI (örn. '500-1200 µs'), PW veya ATP aralığı sorduğunda:
              * minFrekansMhz, maxFrekansMhz, minPriMicroSec, maxPriMicroSec vb. parametreleri doldur. Aralık kesişimi uygulanır.
            - Zaman/Tarih filtrelemesi ('son 24 saat', 'bugün', 'dün', 'son 1 saat'):
              * Kullanıcı sorusunda açıkça bir zaman/tarih belirtmediği sürece baslangicZamani ve bitisZamani parametrelerine ASLA kafandan değer verme, MUTLAKA null (boş) bırak!
-             * Sadece kullanıcı 'son 24 saat', 'bugün', 'dün' gibi bir zaman kısıtı belirttiğinde baslangicZamani parametresine 'SON_24_SAAT', 'BUGUN', 'DUN', 'SON_1_SAAT' veya ISO tarih ('2026-10-02') ilet.
+             * Sadece kullanıcı 'son 24 saat', 'bugün', 'dün' gibi bir zaman kısıtı belirttiğinde baslangicZamani parametresine 'SON_24_SAAT', 'BUGUN', 'DUN', 'SON_1_SAAT', 'SON_1_HAFTA' ('geçen hafta' veya 'son 1 hafta' için) veya ISO tarih ('2026-10-02') ilet.
            - Bölge / Mevzi filtrelemesi ('Ege bölgesindeki hedefler', 'Akdeniz', 'Kilis', 'Suriye'):
              * bolge parametresine bölge veya mevzi adını ('Ege', 'Akdeniz', 'Kilis' vb.) ilet.
            - Radar Görevi filtrelemesi ('Atış kontrol radarları', 'Erken ihbar', 'Arama'):

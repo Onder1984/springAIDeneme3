@@ -25,7 +25,8 @@ import {
   ClearOutlined,
   DatabaseOutlined,
   SettingOutlined,
-  FilterOutlined
+  FilterOutlined,
+  SecurityScanOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -220,7 +221,7 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
       title: 'Kayıt ID',
       dataIndex: 'id',
       key: 'id',
-      width: 110,
+      width: 115,
       sorter: true,
       render: (text) => (
         <Tag color="purple" style={{ cursor: 'pointer', fontWeight: 600 }}>
@@ -229,7 +230,7 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
       )
     },
     {
-      title: 'Nitelik',
+      title: 'Kayıt Niteliği',
       dataIndex: 'kayitTipi',
       key: 'kayitTipi',
       width: 145,
@@ -271,6 +272,7 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
       title: 'Çağrı Ağı (Link)',
       dataIndex: 'cagriAdi',
       key: 'cagriAgi',
+      width: 230,
       sorter: true,
       filterDropdown: ({ confirm, clearFilters }) => (
         <div style={{ padding: 12, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: 8, width: 260 }}>
@@ -349,7 +351,7 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
       title: 'Lisan',
       dataIndex: 'lisan',
       key: 'lisan',
-      width: 100,
+      width: 110,
       sorter: true,
       render: (text) => text ? <Tag color="gold">{text}</Tag> : '-'
     },
@@ -357,7 +359,7 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
       title: 'Bant / Tip',
       dataIndex: 'tip',
       key: 'tip',
-      width: 100,
+      width: 110,
       sorter: true,
       render: (text) => text ? <Tag color="blue">{text}</Tag> : '-'
     },
@@ -365,7 +367,7 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
       title: 'Haberleşme Şekli',
       dataIndex: 'haberlesmeSekli',
       key: 'haberlesmeSekli',
-      width: 140,
+      width: 160,
       sorter: true,
       render: (text) => {
         if (!text) return '-';
@@ -378,7 +380,7 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
       title: 'Frekans (MHz)',
       dataIndex: 'minFrekansMhz',
       key: 'frekans',
-      width: 140,
+      width: 150,
       sorter: true,
       render: (_, record) => (
         <Text style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>
@@ -387,10 +389,10 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
       )
     },
     {
-      title: 'Kripto',
+      title: 'Kripto Durumu',
       dataIndex: 'haberlesmeSekli',
       key: 'kriptoluMu',
-      width: 110,
+      width: 130,
       sorter: true,
       render: (val) => val === 'KRIPTO' ? (
         <Tag color="error" icon={<LockOutlined />}>KRİPTOLU</Tag>
@@ -399,10 +401,10 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
       )
     },
     {
-      title: 'Sinyal Gücü',
+      title: 'Sinyal Gücü (dBm)',
       dataIndex: 'genlikDbm',
       key: 'genlikDbm',
-      width: 110,
+      width: 135,
       sorter: true,
       render: (val) => val ? `${val.toFixed(1)} dBm` : '-'
     },
@@ -410,7 +412,7 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
       title: 'Bölge / Konum',
       dataIndex: 'hedefYerBilgisi',
       key: 'hedefYerBilgisi',
-      width: 170,
+      width: 180,
       sorter: true,
       render: (text, record) => {
         if (record.kayitTipi === 'HAM_LOB') {
@@ -427,10 +429,10 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
       }
     },
     {
-      title: 'Son Tespit',
+      title: 'Son Tespit Zamanı',
       dataIndex: 'sonTespitZamani',
       key: 'sonTespitZamani',
-      width: 160,
+      width: 175,
       sorter: true,
       defaultSortOrder: 'descend',
       render: (val, record) => record.sonTespitZamaniFormatted || (val ? dayjs(val).format('DD.MM.YYYY HH:mm:ss') : '-')
@@ -438,7 +440,7 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
     {
       title: 'İşlem',
       key: 'action',
-      width: 80,
+      width: 85,
       fixed: 'right',
       render: (_, record) => (
         <Button
@@ -471,6 +473,29 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
       }}
       bodyStyle={{ padding: 16 }}
     >
+      {/* Muhabere Listesi Taktik Başlık ve Metrik Çubuğu */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingBottom: 12, borderBottom: '1px solid #1e293b' }}>
+        <Space align="center" size={10}>
+          <SecurityScanOutlined style={{ fontSize: 20, color: '#c084fc' }} />
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Text strong style={{ fontSize: 16, color: '#f8fafc', letterSpacing: 0.5, fontFamily: 'Rajdhani, sans-serif' }}>
+                MUHABERE (COMINT) TAKTİK YAYIN LİSTESİ
+              </Text>
+              <Tag color="purple" style={{ fontSize: 10, lineHeight: '16px', margin: 0, fontWeight: 600 }}>30 PARAMETRE</Tag>
+            </div>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              Telsiz çağrı ağları, frekans spektrumu, kestirim elipsleri ve tekil DF kerterizleri
+            </Text>
+          </div>
+        </Space>
+        <div style={{ textAlign: 'right' }}>
+          <Text style={{ fontSize: 12, color: '#94a3b8' }}>
+            Toplam: <strong style={{ color: '#c084fc', fontSize: 13 }}>{total.toLocaleString()}</strong> aktif muhabere kaydı
+          </Text>
+        </div>
+      </div>
+
       {/* Filtre ve Arama Çubuğu */}
       <Row gutter={[12, 12]} style={{ marginBottom: 12 }} align="middle">
         <Col xs={24} sm={8} md={5}>
@@ -754,7 +779,7 @@ export default function ComintTable({ onSelectComint, initialFilter }) {
         columns={columns}
         loading={loading}
         size="middle"
-        scroll={{ x: 1200 }}
+        scroll={{ x: 1850 }}
         pagination={{
           current: page,
           pageSize: pageSize,

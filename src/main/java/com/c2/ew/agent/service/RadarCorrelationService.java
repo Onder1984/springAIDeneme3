@@ -26,7 +26,6 @@ public class RadarCorrelationService {
 
     private static final Logger log = LoggerFactory.getLogger(RadarCorrelationService.class);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss").withZone(ZoneId.of("Europe/Istanbul"));
-    private static final Locale TR_LOCALE = Locale.forLanguageTag("tr-TR");
 
     private final TacticalEmissionJpaRepository emissionRepo;
     private final ObjectMapper objectMapper;

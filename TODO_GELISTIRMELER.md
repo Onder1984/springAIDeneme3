@@ -131,4 +131,25 @@ Operatörün belirttiği gerçekçi Elektronik Harp ve SIGINT doktrini sisteme k
 2. **Yol B (Mevcut ICU Collation Devamı):**
    - `tr-TR-x-icu` collation'ının büyük veri hacimlerinde (500K+ kayıt) B-Tree indeks performansı ve bellek kullanımının izlenmesi.
 
+---
+
+## 📌 TODO-06: Callsign (Çağrı Adı) İkili Konuşma Matrisi ve Isı Haritası Uyumu (Collation & Çift Yönlülük)
+
+### 1. Belirtilen Sorun
+Operatör arayüzdeki ECharts Isı Haritasında *"GRIFFIN-2 ve SHADOW-03"* hücresinde binlerce (4.400+) konuşma görürken, Copilot'a *"GRIFFIN-2 ile SHADOW-03 arasındaki konuşma adedi kaç"* diye sorduğunda asistanın *"Bu iki çağrı adı arasında doğrudan temas/görüşme tespit edilmemiştir (0 adet)"* yanıtını vermesi.
+
+### 2. Kök Neden Analizi
+1. **ICU Collation ve `LOWER` Uyuşmazlığı:** `tactical_comint` tablosundaki `cagri_adi` ve `karsi_cagri_adi` kolonları `tr-TR-x-icu` collation'ına sahiptir. PostgreSQL'de `LOWER('GRIFFIN-2')` çalıştırıldığında İngilizce ASCII `I` harfi Türkçe noktasız `ı` (`grıffın-2`) harfine dönüşmektedir. Ancak Java / parametre tarafında `LOWER('%GRIFFIN-2%')` varsayılan collation ile noktalı `i` (`%griffin-2%`) ürettiğinden `LIKE` eşleşmesi bayt seviyesinde başarısız olmakta ve veritabanı 0 satır dönmektedir.
+2. **Tek Yönlü (Unidirectional) SQL Kısıtı:** Askeri haberleşmede "A ile B arasındaki görüşme" ifadesi karşılıklı iletişimi (A->B ve B->A) ifade ederken, mevcut SQL sorgusu yalnızca `cagri_adi = A AND karsi_cagri_adi = B` şeklinde tek yönlü filtrelenmektedir.
+3. **Zaman Aralığı Farkı:** Isı Haritası varsayılan olarak `SON_24_SAAT` filtresiyle çalışırken (4.458 adet), filtresiz genel veritabanı toplamı 6.047 adettir.
+
+### 3. Planlanan Çözüm Adımları
+1. **Collation Bağımsız UPPER Mimarisi:**
+   `TacticalComintJpaRepository.java` içerisindeki `getFilteredCallsignInteractionMatrix`, `getFilteredCallsignInteractionMatrixWithTimeRange` ve `getHourlyTrafficTrend` native sorgularında `LOWER` yerine `UPPER(...) LIKE UPPER(...)` yapısına geçilecek.
+2. **Simetrik Çift Yönlü Eşleşme:**
+   Çağrı çifti sorgularına simetrik çift yönlü eşleşme kazandırılacak (`(cagri=A AND karsi=B) OR (cagri=B AND karsi=A)`).
+3. **JPA Specification Senkronizasyonu:**
+   `ComintEmissionTools.java` içerisindeki `queryComintCallsignNetwork` aracında JPA Specification karşılaştırmaları `cb.upper` ve `toUpperCase(Locale.ROOT)` ile uyumlu hale getirilecek.
+
+
 

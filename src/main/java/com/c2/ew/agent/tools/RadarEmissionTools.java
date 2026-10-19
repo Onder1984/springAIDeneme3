@@ -20,7 +20,9 @@ import com.c2.ew.domain.model.GeoPoint;
 
 import com.c2.ew.agent.dto.TacticalDistributionDto;
 import com.c2.ew.agent.dto.TacticalWaveformTimelineDto;
+import com.c2.ew.agent.dto.RadarSpectrumOccupancyDto;
 import com.c2.ew.agent.service.RadarCorrelationService;
+import com.c2.ew.agent.service.RadarSpectrumOccupancyService;
 import com.c2.ew.agent.service.TacticalDistributionService;
 import com.c2.ew.agent.service.TacticalWaveformTimelineService;
 
@@ -75,6 +77,7 @@ public class RadarEmissionTools {
     private final TacticalDistributionService distributionService;
     private final TacticalWaveformTimelineService timelineService;
     private final RadarCorrelationService correlationService;
+    private final RadarSpectrumOccupancyService spectrumOccupancyService;
 
     public RadarEmissionTools(
         TacticalEmissionJpaRepository emissionRepo,
@@ -82,7 +85,8 @@ public class RadarEmissionTools {
         ObjectMapper objectMapper,
         TacticalDistributionService distributionService,
         TacticalWaveformTimelineService timelineService,
-        RadarCorrelationService correlationService
+        RadarCorrelationService correlationService,
+        RadarSpectrumOccupancyService spectrumOccupancyService
     ) {
         this.emissionRepo = emissionRepo;
         this.comintRepo = comintRepo;
@@ -90,6 +94,7 @@ public class RadarEmissionTools {
         this.distributionService = distributionService;
         this.timelineService = timelineService;
         this.correlationService = correlationService;
+        this.spectrumOccupancyService = spectrumOccupancyService;
     }
 
     private String cleanParam(String val) {
@@ -744,7 +749,7 @@ public class RadarEmissionTools {
         if (v.contains("SON_12_SAAT") || v.contains("12_SAAT")) return isStart ? refTime.minus(Duration.ofHours(12)) : refTime;
         if (v.contains("SON_24_SAAT") || v.contains("24_SAAT") || v.contains("1_GUN")) return isStart ? refTime.minus(Duration.ofDays(1)) : refTime;
         if (v.contains("SON_48_SAAT") || v.contains("48_SAAT") || v.contains("2_GUN")) return isStart ? refTime.minus(Duration.ofDays(2)) : refTime;
-        if (v.contains("SON_1_HAFTA") || v.contains("7_GUN") || v.contains("1_HAFTA")) return isStart ? refTime.minus(Duration.ofDays(7)) : refTime;
+        if (v.contains("SON_1_HAFTA") || v.contains("7_GUN") || v.contains("1_HAFTA") || v.contains("GECEN_HAFTA") || v.contains("HAFTA")) return isStart ? refTime.minus(Duration.ofDays(7)) : refTime;
 
         LocalDate refDate = refTime.atZone(ZoneId.systemDefault()).toLocalDate();
         if (v.contains("BUGUN") || v.contains("TODAY")) {
@@ -1457,5 +1462,22 @@ public class RadarEmissionTools {
 
     public TacticalWaveformTimelineDto getTacticalWaveformTimeline(String targetKey) {
         return getTacticalWaveformTimeline("RADAR", targetKey, "ALL");
+    }
+
+    @Tool(description = "Radar yayınları için 50 MHz dar frekans aralıklarında (yüksek çözünürlüklü taktik kanallar) teşhis kimliğine (DÜŞMAN, MUHTEMEL_DÜŞMAN, BİLİNMEYEN, DOST vb.) göre spektrum doluluk ve kullanım yoğunluğu (occupancy %) analizini ve tablosunu hesaplar. " +
+        "timeRange: 'SON_1_SAAT', 'SON_6_SAAT', 'SON_24_SAAT' (veya son 1 gün / bugün için), 'SON_1_HAFTA' veya 'ALL'. Boş ise 'SON_24_SAAT' alınır. " +
+        "teshisKimlik: Tek teşhis ('DUSMAN', 'DOST', 'BILINMEYEN') veya virgülle birden fazla ('DUSMAN,MUHTEMEL_DUSMAN') veya 'ALL'. Boş bırakılırsa varsayılan 'DUSMAN' alınır. " +
+        "Operatör düşman radar frekans kullanım yoğunluğu, frekans aralıklarının doluluk yüzdesi, spektrum doluluk tablosu sorduğunda KESİNLİKLE BU ARACI ÇAĞIR.")
+    public RadarSpectrumOccupancyDto getRadarSpectrumOccupancy(String timeRange, String teshisKimlik) {
+        CALL_LOGS.get().add(String.format("Tool Çağrısı: getRadarSpectrumOccupancy(timeRange=%s, teshisKimlik=%s) çalıştırıldı.", timeRange, teshisKimlik));
+        return spectrumOccupancyService.calculateOccupancy(timeRange, teshisKimlik, 50.0, true);
+    }
+
+    public RadarSpectrumOccupancyDto getRadarSpectrumOccupancy(String timeRange) {
+        return getRadarSpectrumOccupancy(timeRange, "DUSMAN");
+    }
+
+    public RadarSpectrumOccupancyDto getRadarSpectrumOccupancy() {
+        return getRadarSpectrumOccupancy("SON_24_SAAT", "DUSMAN");
     }
 }

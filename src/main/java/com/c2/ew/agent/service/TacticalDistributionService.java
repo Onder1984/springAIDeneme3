@@ -3,8 +3,6 @@ package com.c2.ew.agent.service;
 import com.c2.ew.agent.dto.TacticalDistributionDto;
 import com.c2.ew.infrastructure.repository.TacticalComintJpaRepository;
 import com.c2.ew.infrastructure.repository.TacticalEmissionJpaRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -15,8 +13,6 @@ import java.util.*;
 
 @Service
 public class TacticalDistributionService {
-
-    private static final Logger log = LoggerFactory.getLogger(TacticalDistributionService.class);
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final TacticalEmissionJpaRepository emissionRepo;
@@ -103,6 +99,8 @@ public class TacticalDistributionService {
                 start = refTime.minus(Duration.ofHours(6));
             } else if (cleanTime.contains("SON_24_SAAT") || cleanTime.contains("24_SAAT") || cleanTime.contains("BUGUN")) {
                 start = refTime.minus(Duration.ofHours(24));
+            } else if (cleanTime.contains("7_GUN") || cleanTime.contains("HAFTA")) {
+                start = refTime.minus(Duration.ofDays(7));
             }
 
             if (start != null) {
