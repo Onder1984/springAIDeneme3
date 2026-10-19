@@ -132,6 +132,40 @@ Her bir aday için toplam benzerlik skoru $S_{\text{toplam}} \in [0.0, 100.0]$ p
 
 ---
 
+### 3.3. Gelecek Değerlendirmeler & Beklemedeki Parametreler (TODO / Yol Haritası)
+
+Operatör ve komuta katı kararıyla şimdilik 1-to-N benzerlik motoruna dahil edilmeyen, **ilerleyen aşamalarda tekrar değerlendirilmek üzere "TODO" olarak kayıt altına alınan** parametreler ve gerekçeleri aşağıdadır:
+
+#### 1. ATP (Anten Tarama Periyodu) Zarfı ve Alt Tipleri
+- **Mevcut Durum:** 1-to-1 karşılaştırmasında tam olarak aktiftir (Zarf IoU ve Alt Tip IoU hesaplanır).
+- **1-to-N'de Bekletilme Gerekçesi:** "Eksik / Null Veri = 0 Puan" prensibi geçerlidir. Sahada hedef izleme (tracking / lock-on) modunda sabit duran veya anten tur süresi henüz ESM/ELINT sensörlerince ölçülememiş radarların haksız yere 0 puan alarak, frekans/PRI/PW imzaları bire bir uyuşmasına rağmen benzerlik sıralamasında haksızca geriye düşmesini engellemek için şimdilik devre dışı bırakılmıştır.
+- **İlerideki Değerlendirme:** Sensör kapsama kalitesi arttığında veya ATP varlığına göre dinamik normalizasyon opsiyonu eklendiğinde RF kategorisine (örn. 5 Puan olarak) dahil edilecektir.
+
+#### 2. ELNOT (`elintNotasyonu`)
+- **Tanım:** NATO ve Milli ELINT veritabanlarında radar sistemlerine tahsis edilen standart 5 karakterli/kodlu sinyal tanımlayıcısı (Örn: `EL-3401`, `R-12B`).
+- **Değerlendirme Notu:** Bire bir eşleşme durumunda taktik kategoriye doğrudan güçlü bir teşhis teyidi olarak 3 - 5 puanlık katkı sağlayabilir.
+
+#### 3. Spot No (`spotNo`)
+- **Tanım:** Radar sisteminin önceden planlanmış operasyonel frekans kanalı / spot frekans indeks numarası (Örn: `SPOT-04`).
+- **Değerlendirme Notu:** Özellikle frekans atlamalı (frequency agile) veya kanalize çalışan tehdit radarlarında aynı kanalda çalışma benzerliği için 2 - 3 puanlık bir ağırlıkla değerlendirilebilir.
+
+#### 4. HSS (`hss`) Entegrasyonu
+- **Tanım:** Radarın bir Hava Savunma Sistemi (HSS) bataryasına (Örn: S-300, Patriot, HİSAR) veya komuta kontrol mimarisine bağlı olup olmadığı bilgisi.
+- **Değerlendirme Notu:** Taktik durumsal farkındalıkta hedef angajman önceliğini doğrudan etkileyen bir parametredir.
+
+#### 5. Önerilen Gelecek 100 Puan Dağılım Modeli (Revizyon Taslağı)
+
+Bu parametrelerin tamamı veya bir kısmı devreye alındığında 100 puanlık skalanın korunması için önerilen denge matrisi:
+
+| Ana Kategori | Parametreler | Önerilen Ağırlık | Açıklama |
+| :--- | :--- | :---: | :--- |
+| **A. RF Sinyal İmzası** | Frekans (16P) + PRI (12P) + PW (8P) + Modülasyon (4P) + **ATP (5P)** | **45 Puan** | ATP dahil edilerek RF sinyal imzası tamamlanır. |
+| **B. Zaman Analizi** | Zaman Kesişimi (10P) + Zaman Yakınlığı (10P) | **20 Puan** | Eşit ağırlıklı bağımsız zaman ekseni aynen korunur. |
+| **C. Taktik, Teşhis & Coğrafya** | Yer/Mevzi (10P) + Radar Adı/Görevi (10P) + Teşhis (7P) + **ELNOT / Spot / HSS (5P)** + Platform (3P) | **35 Puan** | ELNOT, Spot No ve HSS taktik kimlik doğrulamasına eklenir. |
+| **GENEL TOPLAM** | | **100 Puan** | **%100 üzerinden dengeli ve tam kapsamlı ELINT doktrini.** |
+
+---
+
 ## 4. KAPSAMLI ALGORİTMA AKIŞ ŞEMASI
 
 ```mermaid

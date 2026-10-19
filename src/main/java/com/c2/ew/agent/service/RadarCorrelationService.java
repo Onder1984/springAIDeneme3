@@ -887,6 +887,24 @@ public class RadarCorrelationService {
         return response;
     }
 
+    /**
+     * Aday radar/LOB kaydını referans hedefe göre 100 puanlık doktrinel matris üzerinden skorlar.
+     *
+     * TODO [GELECEK DEĞERLENDİRME / YOL HARİTASI]:
+     * Operatör kararıyla şimdilik 1-to-N benzerlik motoruna dahil edilmeyen, ilerleyen fazda
+     * tekrar değerlendirilmek üzere listeye alınan parametreler:
+     * 1. ATP (Anten Tarama Periyodu) Zarfı & Alt Tipleri (1-to-1'de aktif, 1-to-N'de tarama yapmayan
+     *    veya periyodu ölçülemeyen radarların haksız yere Null=0P cezası almaması için bekletiliyor).
+     * 2. ELNOT (elintNotasyonu): NATO/Milli ELINT kütüphanesi kod uyumu (Örn: "EL-3401").
+     * 3. Spot No (spotNo): Frekans/kanal planı eşleşmesi (Örn: "SPOT-12").
+     * 4. HSS (hss): Hava Savunma Sistemi batarya/komuta kontrol ilişkisi.
+     * 5. Darbe İçi Modülasyon Alt Tipleri: Barkod, Frank kodu, doğrusal frekans modülasyonu (LFM/Chirp) ayrımı.
+     *
+     * Bu parametreler devreye alındığında 100 puanlık dağılımın bozulmaması için önerilen ağırlıklar:
+     * - RF İmzası: 45 Puan (Frekans: 16P, PRI: 12P, PW: 8P, RF Modülasyon: 4P, ATP: 5P)
+     * - Zaman: 20 Puan (Kesişim: 10P, Yakınlık: 10P)
+     * - Taktik & Coğrafya: 35 Puan (Yer/Mevzi: 10P, Radar Adı/Görevi: 10P, Teşhis: 7P, ELNOT/Spot/HSS: 5P, Platform: 3P)
+     */
     private SimilarRadarCandidate scoreCandidate(TacticalEmissionEntity t, TacticalEmissionEntity c) {
         // 1. FREKANS ZARFI (10 P)
         IntervalMatch fZarf = compareNumericInterval(t.getMinFrekansMhz(), t.getMaxFrekansMhz(), c.getMinFrekansMhz(), c.getMaxFrekansMhz(), "MHz");
