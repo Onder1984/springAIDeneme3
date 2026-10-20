@@ -205,7 +205,7 @@ public class RadarSpectrumOccupancyService {
                 List<String> topRadars = radarFreqMap.entrySet().stream()
                     .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue()))
                     .limit(4)
-                    .map(Map.Entry::getKey)
+                    .map(e -> e.getKey())
                     .toList();
 
                 identityDetails.put(identity, new IdentityBandDetail(

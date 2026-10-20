@@ -799,10 +799,12 @@ public class ComintEmissionTools {
                 predicates.add(cb.or(matchForward, matchReverse));
             } else {
                 String searchCall = clean != null ? clean : cleanKarsi;
-                predicates.add(cb.or(
-                    cb.like(cb.lower(root.get("cagriAdi")), "%" + searchCall.toLowerCase() + "%"),
-                    cb.like(cb.lower(root.get("karsiCagriAdi")), "%" + searchCall.toLowerCase() + "%")
-                ));
+                if (searchCall != null) {
+                    predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("cagriAdi")), "%" + searchCall.toLowerCase() + "%"),
+                        cb.like(cb.lower(root.get("karsiCagriAdi")), "%" + searchCall.toLowerCase() + "%")
+                    ));
+                }
             }
             if (finalStart != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("sonTespitZamani"), finalStart));
@@ -1096,7 +1098,7 @@ public class ComintEmissionTools {
         if (e.getKayitTipi() == KayitTipi.KESTIRIM_ELIPS) {
             List<TacticalComintEntity> childLobs = comintRepo.findByKestirimId(e.getId());
             if (childLobs != null && !childLobs.isEmpty()) {
-                iliskiliLobIdListesi = childLobs.stream().map(TacticalComintEntity::getId).toList();
+                iliskiliLobIdListesi = childLobs.stream().map(c -> c.getId()).toList();
             }
         }
 

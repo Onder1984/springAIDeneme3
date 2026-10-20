@@ -336,7 +336,7 @@ public class RadarCorrelationService {
             } else if (f1 != null) {
                 results.add(new SubtypeMatch(type, false, new IntervalMatch(false, 0.0, 0, 0, null, "Sadece Radar 1'de mevcut"),
                     String.format("[%.1f - %.1f MHz]", f1.minFrekansMhz(), f1.maxFrekansMhz()), "-"));
-            } else {
+            } else if (f2 != null) {
                 results.add(new SubtypeMatch(type, false, new IntervalMatch(false, 0.0, 0, 0, null, "Sadece Radar 2'de mevcut"),
                     "-", String.format("[%.1f - %.1f MHz]", f2.minFrekansMhz(), f2.maxFrekansMhz())));
             }
@@ -371,7 +371,7 @@ public class RadarCorrelationService {
             } else if (p1 != null) {
                 results.add(new SubtypeMatch(type, false, new IntervalMatch(false, 0.0, 0, 0, null, "Sadece Radar 1'de mevcut"),
                     String.format("[%.1f - %.1f µs]", p1.minPriMicroSec(), p1.maxPriMicroSec()), "-"));
-            } else {
+            } else if (p2 != null) {
                 results.add(new SubtypeMatch(type, false, new IntervalMatch(false, 0.0, 0, 0, null, "Sadece Radar 2'de mevcut"),
                     "-", String.format("[%.1f - %.1f µs]", p2.minPriMicroSec(), p2.maxPriMicroSec())));
             }
@@ -406,7 +406,7 @@ public class RadarCorrelationService {
             } else if (p1 != null) {
                 results.add(new SubtypeMatch(type, false, new IntervalMatch(false, 0.0, 0, 0, null, "Sadece Radar 1'de mevcut"),
                     String.format("[%.2f - %.2f µs]", p1.minPwMicroSec(), p1.maxPwMicroSec()), "-"));
-            } else {
+            } else if (p2 != null) {
                 results.add(new SubtypeMatch(type, false, new IntervalMatch(false, 0.0, 0, 0, null, "Sadece Radar 2'de mevcut"),
                     "-", String.format("[%.2f - %.2f µs]", p2.minPwMicroSec(), p2.maxPwMicroSec())));
             }
@@ -441,7 +441,7 @@ public class RadarCorrelationService {
             } else if (a1 != null) {
                 results.add(new SubtypeMatch(type, false, new IntervalMatch(false, 0.0, 0, 0, null, "Sadece Radar 1'de mevcut"),
                     String.format("%.1f µs", a1.atpOrtMicroSec()), "-"));
-            } else {
+            } else if (a2 != null) {
                 results.add(new SubtypeMatch(type, false, new IntervalMatch(false, 0.0, 0, 0, null, "Sadece Radar 2'de mevcut"),
                     "-", String.format("%.1f µs", a2.atpOrtMicroSec())));
             }
@@ -530,7 +530,7 @@ public class RadarCorrelationService {
             freqZarf.hasOverlap() ? String.format("%%% .1f IoU (%s)", freqZarf.matchRatio() * 100.0, freqZarf.description()) : freqZarf.description()));
 
         // 2.1 FREKANS TİP LİSTESİ
-        boolean ortakFreqTipVar = freqTipler.stream().anyMatch(SubtypeMatch::tipOrtak);
+        boolean ortakFreqTipVar = freqTipler.stream().anyMatch(s -> s.tipOrtak());
         sb.append(String.format("| └─ *Frekans Liste Tipleri* | %s | %s | %s | %s |\n",
             summarizeTypes(freqTipler, true), summarizeTypes(freqTipler, false),
             ortakFreqTipVar ? "✅ ORTAK TİP VAR" : "❌ ORTAK TİP YOK",
@@ -545,7 +545,7 @@ public class RadarCorrelationService {
             priZarf.hasOverlap() ? String.format("%%% .1f IoU (%s)", priZarf.matchRatio() * 100.0, priZarf.description()) : priZarf.description()));
 
         // 3.1 PRI TİP LİSTESİ
-        boolean ortakPriTipVar = priTipler.stream().anyMatch(SubtypeMatch::tipOrtak);
+        boolean ortakPriTipVar = priTipler.stream().anyMatch(s -> s.tipOrtak());
         sb.append(String.format("| └─ *PRI Liste Tipleri* | %s | %s | %s | %s |\n",
             summarizeTypes(priTipler, true), summarizeTypes(priTipler, false),
             ortakPriTipVar ? "✅ ORTAK TİP VAR" : "❌ ORTAK TİP YOK",
@@ -560,7 +560,7 @@ public class RadarCorrelationService {
             pwZarf.hasOverlap() ? String.format("%%% .1f IoU (%s)", pwZarf.matchRatio() * 100.0, pwZarf.description()) : pwZarf.description()));
 
         // 4.1 PW TİP LİSTESİ
-        boolean ortakPwTipVar = pwTipler.stream().anyMatch(SubtypeMatch::tipOrtak);
+        boolean ortakPwTipVar = pwTipler.stream().anyMatch(s -> s.tipOrtak());
         sb.append(String.format("| └─ *PW Liste Tipleri* | %s | %s | %s | %s |\n",
             summarizeTypes(pwTipler, true), summarizeTypes(pwTipler, false),
             ortakPwTipVar ? "✅ ORTAK TİP VAR" : "❌ ORTAK TİP YOK",
@@ -575,7 +575,7 @@ public class RadarCorrelationService {
             atpZarf.hasOverlap() ? String.format("%%% .1f IoU (%s)", atpZarf.matchRatio() * 100.0, atpZarf.description()) : atpZarf.description()));
 
         // 5.1 ATP TİP LİSTESİ
-        boolean ortakAtpTipVar = atpTipler.stream().anyMatch(SubtypeMatch::tipOrtak);
+        boolean ortakAtpTipVar = atpTipler.stream().anyMatch(s -> s.tipOrtak());
         sb.append(String.format("| └─ *ATP Liste Tipleri* | %s | %s | %s | %s |\n",
             summarizeTypes(atpTipler, true), summarizeTypes(atpTipler, false),
             ortakAtpTipVar ? "✅ ORTAK TİP VAR" : "❌ ORTAK TİP YOK",
@@ -839,7 +839,7 @@ public class RadarCorrelationService {
         }
 
         // Toplam benzerlik skoruna göre azalan sırada sırala
-        scoredCandidates.sort(Comparator.comparingDouble(SimilarRadarCandidate::totalScore).reversed());
+        scoredCandidates.sort(Comparator.comparingDouble((SimilarRadarCandidate sc) -> sc.totalScore()).reversed());
 
         // İlk maxLimit adayı al ve sıra numarası ata
         List<SimilarRadarCandidate> topCandidates = new ArrayList<>();
@@ -893,7 +893,7 @@ public class RadarCorrelationService {
 
         // 2. FREKANS ALT TİPLERİ (8 P)
         List<SubtypeMatch> fTipler = compareFrequencySubtypes(t.getFrekansListesiJson(), c.getFrekansListesiJson());
-        List<SubtypeMatch> commonFTypes = fTipler.stream().filter(SubtypeMatch::tipOrtak).toList();
+        List<SubtypeMatch> commonFTypes = fTipler.stream().filter(s -> s.tipOrtak()).toList();
         double fSubtypeScore = 0.0;
         if (!commonFTypes.isEmpty()) {
             double avgIoU = commonFTypes.stream().mapToDouble(s -> s.intervalMatch().matchRatio()).average().orElse(0.0);
@@ -906,7 +906,7 @@ public class RadarCorrelationService {
 
         // 4. PRI ALT TİPLERİ (6 P)
         List<SubtypeMatch> pTipler = comparePriSubtypes(t.getPriListesiJson(), c.getPriListesiJson());
-        List<SubtypeMatch> commonPTypes = pTipler.stream().filter(SubtypeMatch::tipOrtak).toList();
+        List<SubtypeMatch> commonPTypes = pTipler.stream().filter(s -> s.tipOrtak()).toList();
         double pSubtypeScore = 0.0;
         if (!commonPTypes.isEmpty()) {
             double avgIoU = commonPTypes.stream().mapToDouble(s -> s.intervalMatch().matchRatio()).average().orElse(0.0);
@@ -919,7 +919,7 @@ public class RadarCorrelationService {
 
         // 6. PW ALT TİPLERİ (3 P)
         List<SubtypeMatch> pwTipler = comparePwSubtypes(t.getPwListesiJson(), c.getPwListesiJson());
-        List<SubtypeMatch> commonPwTypes = pwTipler.stream().filter(SubtypeMatch::tipOrtak).toList();
+        List<SubtypeMatch> commonPwTypes = pwTipler.stream().filter(s -> s.tipOrtak()).toList();
         double pwSubtypeScore = 0.0;
         if (!commonPwTypes.isEmpty()) {
             double avgIoU = commonPwTypes.stream().mapToDouble(s -> s.intervalMatch().matchRatio()).average().orElse(0.0);

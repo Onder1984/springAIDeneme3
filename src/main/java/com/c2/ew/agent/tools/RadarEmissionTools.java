@@ -568,7 +568,7 @@ public class RadarEmissionTools {
         if (e.getKayitTipi() == KayitTipi.KESTIRIM_ELIPS) {
             List<TacticalEmissionEntity> childLobs = emissionRepo.findByKestirimId(e.getId());
             if (childLobs != null && !childLobs.isEmpty()) {
-                iliskiliLobIdListesi = childLobs.stream().map(TacticalEmissionEntity::getId).toList();
+                iliskiliLobIdListesi = childLobs.stream().map(c -> c.getId()).toList();
             }
         }
 
