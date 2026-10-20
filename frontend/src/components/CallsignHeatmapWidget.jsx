@@ -350,16 +350,18 @@ export default function CallsignHeatmapWidget({
 
   // Ana Kart ECharts Başlatma ve Güncelleme
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current || !data || data.length === 0) return;
 
     if (!chartInstance.current) {
-      chartInstance.current = echarts.init(chartRef.current);
+      chartInstance.current = echarts.init(chartRef.current, 'dark');
     }
 
     const option = buildChartOption(data, metric, scaleType);
     if (option) {
       chartInstance.current.setOption(option, true);
       chartInstance.current.resize();
+      setTimeout(() => { chartInstance.current?.resize(); }, 50);
+      setTimeout(() => { chartInstance.current?.resize(); }, 250);
     } else {
       chartInstance.current.clear();
     }
@@ -381,22 +383,36 @@ export default function CallsignHeatmapWidget({
   }, [data, metric, scaleType]);
 
   // Modal ECharts Başlatma ve Güncelleme (Büyütülmüş Görünüm)
-  useEffect(() => {
-    if (!modalVisible || !modalChartRef.current) return;
-
-    const timer = setTimeout(() => {
-      if (!modalChartInstance.current && modalChartRef.current) {
-        modalChartInstance.current = echarts.init(modalChartRef.current);
+  const renderModalChart = () => {
+    if (!modalChartRef.current || !data) return;
+    try {
+      let inst = echarts.getInstanceByDom(modalChartRef.current);
+      if (!inst) {
+        inst = echarts.init(modalChartRef.current);
       }
-
+      modalChartInstance.current = inst;
       const option = buildChartOption(data, metric, scaleType);
-      if (option && modalChartInstance.current) {
-        modalChartInstance.current.setOption(option, true);
-        modalChartInstance.current.resize();
+      if (option) {
+        inst.clear();
+        inst.setOption(option, { notMerge: true, replaceMerge: ['series', 'xAxis', 'yAxis', 'visualMap'] });
+        inst.resize();
       }
-    }, 150);
+    } catch (err) {
+      console.error('Modal ısı haritası render hatası:', err);
+    }
+  };
 
-    return () => clearTimeout(timer);
+  useEffect(() => {
+    if (!modalVisible || !data) return;
+    renderModalChart();
+    const t1 = setTimeout(renderModalChart, 50);
+    const t2 = setTimeout(renderModalChart, 200);
+    const t3 = setTimeout(renderModalChart, 400);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
   }, [modalVisible, data, metric, scaleType]);
 
   return (
@@ -571,12 +587,20 @@ export default function CallsignHeatmapWidget({
           </div>
         )}
 
-        {(!data || data.length === 0) && !loading ? (
-          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div
+          ref={chartRef}
+          style={{
+            width: '100%',
+            height: '100%',
+            minHeight: 340,
+            display: data && data.length > 0 ? 'block' : 'none'
+          }}
+        />
+
+        {(!data || data.length === 0) && !loading && (
+          <div style={{ height: 340, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Empty description={<span style={{ color: '#94a3b8' }}>Seçili zaman aralığında çağrı etkileşim verisi bulunamadı</span>} />
           </div>
-        ) : (
-          <div ref={chartRef} style={{ width: '100%', height: '100%' }} />
         )}
       </div>
 
@@ -592,6 +616,13 @@ export default function CallsignHeatmapWidget({
           </Space>
         }
         open={modalVisible}
+        afterOpenChange={(open) => {
+          if (open) {
+            renderModalChart();
+            setTimeout(renderModalChart, 50);
+            setTimeout(renderModalChart, 250);
+          }
+        }}
         onCancel={() => setModalVisible(false)}
         width="92vw"
         footer={[
@@ -642,7 +673,16 @@ export default function CallsignHeatmapWidget({
             💡 Büyük ölçekli komuta hiyerarşisi ve muhabere yoğunluk düğümleri
           </Text>
         </div>
-        <div ref={modalChartRef} style={{ width: '100%', height: '70vh' }} />
+        <div
+          ref={(el) => {
+            modalChartRef.current = el;
+            if (el && modalVisible && data) {
+              renderModalChart();
+              setTimeout(renderModalChart, 60);
+            }
+          }}
+          style={{ width: '100%', height: '70vh', minHeight: 480 }}
+        />
       </Modal>
     </Card>
   );

@@ -1,99 +1,175 @@
 ---
 name: sigint-c2-doctrine
 description: >-
-  Authoritative knowledge base and doctrinal rules for military Electronic Warfare (EW / EH)
-  and Signal Intelligence (SIGINT) systems covering ELINT (Radar emissions, PRI, PW, MOP, ATP,
-  HSS, ET/Jamming, Harassment) and COMINT (Radio networks, HF/VHF, crypto, burst, dialogue traffic).
-  Defines precise rules for Ellipse vs. LOB hierarchy (Childed vs. Childless, Connected vs.
-  Stray/Unassociated LOBs) and NATO Tactical Data Links (Link-16, Link-22, JREAP).
+  Askeri Elektronik Harp (EH / EW) ve Sinyal İstihbaratı (SIGINT) sistemleri için yetkili bilgi tabanı
+  ve doktrin kuralları. ELINT (Radar emisyonları, PRI, PW, MOP, ATP, HSS, ET/Karıştırma, Taciz),
+  COMINT (Telsiz ağları, HF/VHF, kriptolu, darbe-patlama, çapraz/diyalog trafiği), Kestirim Elipsi ve
+  LOB hiyerarşisi (Çocuklu/Çocuksuz Elips, Bağlı/Başıboş LOB), NATO Taktik Veri Linkleri (Link-16, Link-22, JREAP)
+  ve Frekans Spektrum Doluluk Analizi kurallarını kapsar.
 ---
 
-# SIGINT & Electronic Warfare (C2 EW) Doctrine Guide
+# Sinyal İstihbaratı (SIGINT) & Elektronik Harp (EH / C2) Doktrin Rehberi
 
-This skill provides comprehensive doctrinal standards, definitions, mathematical foundations, and analysis rules for military **Signals Intelligence (SIGINT)** and **Electronic Warfare (EW / EH)** decision support systems.
+Bu yetenek dokümanı, savunma sanayii ve askeri Komuta Kontrol (C2) karar destek sistemlerinde kullanılan **Sinyal İstihbaratı (SIGINT)** ve **Elektronik Harp (EH / EW)** analizi için bağlayıcı doktrinel standartları, matematiksel temelleri ve taktiksel sınıflandırma kurallarını tanımlar.
 
 ---
 
-## 1. Core SIGINT Taxonomy
+## 1. Temel Sinyal İstihbaratı (SIGINT) Taksonomisi
 
 ```
-                       ┌─────────────────────────────────────┐
-                       │     SİNYAL İSTİHBARATI (SIGINT)     │
-                       └──────────────────┬──────────────────┘
-                                          │
-                 ┌────────────────────────┴────────────────────────┐
-                 ▼                                                 ▼
-    ┌───────────────────────────┐                     ┌───────────────────────────┐
-    │       ELINT (RADAR)       │                     │     COMINT (MUHABERE)     │
-    │ Non-communication Emitters│                     │ Communication Transmissions│
-    └───────────────────────────┘                     └───────────────────────────┘
+                       ┌─────────────────────────────────────────┐
+                       │       SİNYAL İSTİHBARATI (SIGINT)       │
+                       └────────────────────┬────────────────────┘
+                                            │
+                   ┌────────────────────────┴────────────────────────┐
+                   ▼                                                 ▼
+      ┌───────────────────────────┐                     ┌───────────────────────────┐
+      │       ELINT (RADAR)       │                     │     COMINT (MUHABERE)     │
+      │   Haberleşme-Dışı Yayınlar │                     │    Telsiz / Ses / Veri    │
+      └───────────────────────────┘                     └───────────────────────────┘
 ```
 
-### A. ELINT (Electronic Intelligence - Radar & Non-Comm)
-* **Emitter Types:** Early Warning (Erken İhbar), Target Acquisition (Arama/Takip), Fire Control (Atış Kontrol), Missile Guidance (Füze Güdüm), Airborne Intercept (AI / Uçak Radarı), Naval Navigation (Gemi Seyir).
-* **Signal Parameters:**
-  * **RF (Radio Frequency):** Carrier frequency in MHz/GHz.
-  * **PRI (Pulse Repetition Interval):** Time between consecutive pulses in microseconds (µs). Staggered, jittered, or fixed.
-  * **PW (Pulse Width):** Duration of a single pulse in microseconds (µs).
-  * **MOP (Modulation on Pulse):** Linear FM (Chirp), Barker code, Polyphase (P1-P4), Frequency Hopping, Fixed.
-  * **ATP (Antenna Scan Period):** Time taken for one complete antenna rotation in seconds.
-* **Electronic Attack & Harassment (ET & Taciz):**
-  * **ET (Electronic Attack / Jamming):** Active noise jamming (gürültü), deception jamming (aldatma), repeater jamming.
-  * **Taciz (Radar Lock / Illumination):** A fire-control radar locking onto friendly assets without launching a missile.
+### A. ELINT (Elektronik İstihbarat - Radar ve Silah Sistemleri)
+Haberleşme harici elektromanyetik yayınları (özellikle radar ve güdüm sistemleri) inceler.
+* **Radar Görev Tipleri:**
+  * **Erken İhbar (Early Warning):** Geniş alan taraması yapan düşük frekanslı (VHF, UHF, L-Bant) uzun menzilli radarlar.
+  * **Arama ve Takip (Target Acquisition / Track):** Orta menzilli, hedef hız ve koordinatını hassaslaştıran sistemler (S-Bant, C-Bant).
+  * **Atış Kontrol (Fire Control):** Silah sistemine (namlu veya hava savunma füzesine) hedef atayan yüksek frekanslı (X-Bant, Ku-Bant) dar huzmeli radarlar.
+  * **Füze Güdüm (Missile Guidance):** Füzenin hedefe kilitlenmesini sağlayan aydınlatma ve komuta linki yayınları.
+  * **Hava Önleme / Uçak Radarı (Airborne Intercept - AI):** Avcı ve bombardıman uçaklarının burun radarları (örn. APG-77, APG-81).
+* **Temel Sinyal Parametreleri:**
+  * **RF (Radyo Frekansı):** Taşıyıcı sinyalin MHz/GHz cinsinden çalışma aralığı (`minFrekansMhz` - `maxFrekansMhz`).
+  * **PRI (Darbe Tekrarlama Aralığı - Pulse Repetition Interval):** Ardışık iki radar darbesi arasındaki süre (mikrosaniye - µs). Sabit (Fixed), kademeli (Staggered) veya rastgele (Jittered) olabilir.
+  * **PW (Darbe Genişliği - Pulse Width):** Tek bir darbenin süresi (µs).
+  * **MOP (Darbe İçi Modülasyon - Modulation on Pulse):** Doğrusal frekans modülasyonu (Chirp), Barker kodlaması, Çok Fazlı (Polyphase P1-P4), Frekans Atlamalı.
+  * **ATP (Anten Tarama Periyodu - Antenna Scan Period):** Radar anteninin 360 derecelik bir tam turu tamamlama süresi (saniye).
+* **Elektronik Taarruz (ET) ve Taciz:**
+  * **ET (Karıştırma / Jamming):** Gürültü karıştırması (Noise Jamming), Aldatma karıştırması (Deception Jamming), Tekrarlayıcı (DRFM Repeater).
+  * **Taciz (Radar Kilidi / Aydınlatma):** Düşman atış kontrol radarının mühimmat ateşlemeden dost unsurlara kilitlenerek aydınlatması (angajman tehdidi).
 
-### B. COMINT (Communications Intelligence - Radio & Telecom)
-* **Bands:**
-  * **HF (High Frequency, 3–30 MHz):** Ionospheric reflection (skywave), beyond-line-of-sight strategic communications.
-  * **VHF (Very High Frequency, 30–300 MHz):** Tactical line-of-sight, ground troops, air-to-ground, marine distress.
-  * **UHF (Ultra High Frequency, 300–3000 MHz):** Tactical data links, SATCOM, UAV telemetry.
-* **Transmission Modes:**
-  * **Voice (Ses):** Analog FM/AM or digital voice.
-  * **Crypto (Kriptolu):** Encrypted voice or data stream.
-  * **Burst / Frequency Hopping (Darbe-Patlama):** High-speed, short-duration data burst designed to avoid detection (LPI/LPD).
-* **Traffic Patterns:**
-  * **1-to-1 (Point-to-Point):** Dedicated command/tactical link between two call signs.
-  * **Broadcast (Net):** One-to-many communication across an entire tactical network.
+### B. COMINT (Muhabere İstihbaratı - Telsiz ve Taktik Ağlar)
+Askeri haberleşme ağlarını ve telsiz emisyonlarını inceler.
+* **Frekans Bantları:**
+  * **HF (Yüksek Frekans, 3–30 MHz):** İyonosferik yansıma ile ufuk ötesi (BLOS) kıtalararası stratejik haberleşme.
+  * **VHF (Çok Yüksek Frekans, 30–300 MHz):** Görüş hattı (LOS) taktik kara birlikleri, hava-yer haberleşmesi, deniz emniyet kanalları.
+  * **UHF (Ultra Yüksek Frekans, 300–3000 MHz):** Taktik veri linkleri, İHA telemetrisi ve askeri uydu haberleşmesi (SATCOM).
+* **Yayın Karakteristikleri:**
+  * **Ses (Voice):** Açık analog veya dijital ses trafiği.
+  * **Kriptolu (Crypto):** Şifrelenmiş veri veya ses akışı.
+  * **Darbe-Patlama (Burst / Frequency Hopping):** Düşük Tespit Edilme Olasılığı (LPI/LPD) hedefleyen, saliseler süren çok yüksek hızlı veri paketleri.
+* **Trafik Örüntüleri:**
+  * **Birebir (1-to-1):** İki çağrı kodu (komutan-unsur) arasındaki direkt taktiksel hat.
+  * **Ağ (Broadcast / Net):** Tek bir komuta merkezinin tüm taktik ağdaki unsurlara eşzamanlı yayını.
 
 ---
 
-## 2. Ellipse & LOB Hierarchical Architecture
+## 2. Kestirim Elipsi ve Kerteriz Hattı (LOB) Hiyerarşi Mimarisi
 
-### A. Core Definitions
-1. **LOB (Line of Bearing / Kerteriz Çizgisi):**
-   * A single directional ray measured by an azimuth Direction Finding (DF) sensor pointing towards the suspected emitter.
-   * Attributes: Origin latitude/longitude, bearing angle (0–360° True North), azimuth variance.
-2. **Kestirim Elipsi (EmitterFix / CEP Uncertainty Ellipse):**
-   * A geographical uncertainty zone representing the estimated emitter position.
-   * Attributes: Center latitude/longitude, semi-major axis (meters), semi-minor axis (meters), ellipse orientation angle (degrees).
+Sinyal İstihbaratında yön bulma (DF) ve konum kestirimi hiyerarşisi şu kesin kurallara tabidir:
 
-### B. Hierarchy Classification Rules
+```
+                  ┌─────────────────────────────────────────┐
+                  │       KESTİRİM ELİPSİ (EMITTERFIX)      │
+                  │  Enlem, Boylam, Yarı-Büyük, Yarı-Küçük  │
+                  └────────────────────┬────────────────────┘
+                                       │
+            ┌──────────────────────────┴──────────────────────────┐
+            ▼                                                     ▼
+┌───────────────────────────┐                         ┌───────────────────────────┐
+│       ÇOCUKLU ELİPS       │                         │       ÇOCUKSUZ ELİPS      │
+│     (Childed Ellipse)     │                         │    (Childless Ellipse)    │
+│  En az 2 LOB ile bağlıdır │                         │    Bağlı yerel LOB yoktur │
+└───────────┬───────────────┘                         └───────────────────────────┘
+            │
+            ├──────────────────────────┐
+            ▼                          ▼
+┌───────────────────────────┐ ┌───────────────────────────┐
+│         BAĞLI LOB         │ │         BAĞLI LOB         │
+│     (Associated LOB)      │ │     (Associated LOB)      │
+│  kestirim_id = Elips_ID   │ │  kestirim_id = Elips_ID   │
+└───────────────────────────┘ └───────────────────────────┘
 
-| Entity | Category | Definition | Doctrinal Meaning |
+                    ┌───────────────────────────┐
+                    │       BAŞIBOŞ LOB         │
+                    │   (Unassociated Stray)    │
+                    │    kestirim_id = NULL     │
+                    │  Tek istasyon yakaladı    │
+                    └───────────────────────────┘
+```
+
+### A. Varlık Tanımları
+1. **LOB (Line of Bearing - Kerteriz Çizgisi / Yön Hattı):**
+   * Yön Bulma (DF) algılayıcısının tespit ettiği hedefin geldiği azimut yön açısıdır (0–360° Gerçek Kuzey).
+   * Algılayıcı konumu, kerteriz açısı ve yön standart sapmasından oluşur.
+2. **Kestirim Elipsi (EmitterFix / CEP Hata Elipsi):**
+   * Yayının coğrafi konumunu ve olasılık belirsizlik alanını temsil eden elipstir.
+   * Merkez koordinatı, yarı-büyük eksen ($a$, metre), yarı-küçük eksen ($b$, metre) ve yönelim açısından (derece) oluşur.
+
+### B. Hiyerarşik Sınıflandırma ve Doktrinel Anlamı
+
+| Varlık Tipi | Alt Kategori | Tanım Kriteri | Doktrinel Anlamı ve Yorumu |
 | :--- | :--- | :--- | :--- |
-| **Kestirim Elipsi** | **Çocuklu Elips (Childed)** | Veritabanında ona bağlı (`kestirim_id = parent_id`) en az 2 LOB kaydı bulunan kestirim. | Sahadaki 2+ yerel algılayıcının AOA kerteriz kesişimiyle (triangulation) doğrulanmış yüksek güvenilirlikli yerel hedef. |
-| **Kestirim Elipsi** | **Çocuksuz Elips (Childless)** | Veritabanında bağlı yerel LOB kaydı bulunmayan doğrudan kestirim. | **ASLA doğrudan Link-16 olarak etiketlenemez!** Link-16, Link-22, AWACS intikali, İHA taktik izi, doğrudan TDOA algoritması veya manuel operatör girdisi olabilir. |
-| **Ham LOB** | **Bağlı LOB (Associated)** | `kestirim_id` alanı dolu olan kerteriz çizgisi. | Bir kestirim elipsine dahil olmuş, o elipsin hesaplanmasına katılmış yön hattı. |
-| **Ham LOB** | **Başıboş LOB (Unassociated / Stray)** | `kestirim_id` alanı `null` olan kerteriz çizgisi. | Tek istasyonca yakalanmış, diğer istasyonlarca teyit edilememiş hat. Kısa süreli fısıltı yayını, arazi engellemesi, kör nokta veya erken ihbar sinyalidir. |
+| **Kestirim Elipsi** | **Çocuklu Elips (Childed)** | Veritabanında `kestirim_id = parent_id` şartını sağlayan $\ge 2$ LOB kaydı bulunan kestirim. | Sahadaki 2 veya daha fazla yerel ED unsurunun açı kesişimiyle (**Triangulation**) doğrulanmış, yüksek güvenilirlikli yerel kestirim. |
+| **Kestirim Elipsi** | **Çocuksuz Elips (Childless)** | Veritabanında kendisine bağlı yerel LOB kaydı bulunmayan kestirim. | **ASLA doğrudan Link-16 olarak adlandırılamaz!** Harici NATO Taktik Veri Ağı (Link-16 / Link-22), AWACS intikali, İHA EO/IR izi, zaman farkı (**TDOA**) algoritması veya manuel operatör istihbarat girdisi olabilir. |
+| **Ham LOB** | **Bağlı LOB (Associated)** | `kestirim_id` alanı dolu olan kerteriz çizgisi. | Bir kestirim elipsinin hesaplanmasına dahil edilmiş, hedefi teyit eden yöndeş kerteriz hattı. |
+| **Ham LOB** | **Başıboş LOB (Unassociated / Stray)** | `kestirim_id` alanı `null` olan kerteriz çizgisi. | Yalnızca tek bir ED unsuru tarafından duyulmuş, diğer istasyonlarca teyit edilememiş sinyal. **Kısa süreli fısıltı yayını, arazi gölgelemesi (maskeleme), kör nokta veya düşmanın frekans atlama hamlesidir.** |
 
 ---
 
-## 3. Direction Finding Mathematics & Fusion Methods
+## 3. Konum Kestirimi Matematiksel Füzyon Yöntemleri
 
-1. **AOA (Angle of Arrival / Azimuth Intersection):**
-   * Intersects two or more bearings:
-     $$\theta_1, \theta_2$$ from sensors at $$(x_1, y_1), (x_2, y_2)$$.
-   * Solved using Weighted Least Squares (WLS) or Stansfield algorithm to generate the covariance matrix determining the semi-major ($a$) and semi-minor ($b$) axes of the error ellipse.
-2. **TDOA (Time Difference of Arrival):**
-   * Uses synchronized hyperbolic time difference measurements between 3+ stations. Does not produce a single bearing ray; directly calculates hyperbolic position intersection. (Explains why TDOA ellipses are childless in AOA LOB databases).
-3. **FDOA (Frequency Difference of Arrival):**
-   * Uses Doppler frequency shift for moving platforms (aircraft, satellites).
+1. **AOA (Angle of Arrival - Azimut Kesişimi):**
+   * İki veya daha fazla algılayıcının azimut açılarının kesiştirilmesidir:
+     $$\theta_1, \theta_2 \quad \text{algılayıcılar:} \quad (x_1, y_1), (x_2, y_2)$$
+   * Ağırlıklı En Küçük Kareler (Weighted Least Squares - WLS) veya Stansfield algoritması ile kovaryans matrisi çözülür. Yarı-büyük eksen ($a$) ve yarı-küçük eksen ($b$) CEP elipsini oluşturur.
+2. **TDOA (Time Difference of Arrival - Varış Zamanı Farkı):**
+   * Atomik saatlerle senkronize en az 3 istasyonun sinyali alış zaman farklarını kullanır. Açısal ışın (LOB) üretmez; hiperbollerin kesişimi ile doğrudan 2B koordinat kestirilir. *(Bu nedenle TDOA elipslerinin yerel LOB tablosunda çocuğu bulunmaz).*
+3. **FDOA (Frequency Difference of Arrival - Varış Frekansı Farkı):**
+   * Hareketli platformların (uçak, İHA, uydu) Doppler frekans kaymasını kullanarak hız ve konum kestirir.
 
 ---
 
-## 4. Tactical Reporting & Analysis Rules for AI
+## 4. Spektrum Doluluk & Taktik Frekans Kapsama Doktrini
 
-When generating briefings or answering tactical questions:
-1. **No Peşin Etiketleme:** Do not label childless ellipses as "Link-16" unless the `operator_notu` or `hedef_kaynagi` explicitly says so.
-2. **Always State Ratios:** When reporting on LOBs, always provide the Başıboş LOB oranı (`basibos_lob / total_lob * 100%`). High stray rates (>50%) signal terrain masking or agile emitters.
-3. **Time-Bounded Precision:** Always distinguish between short-term tactical movement ("Son 1 saat") and strategic pattern of life ("Son 24 saat").
-4. **Threat Prioritization:** Atış Kontrol radarları (Pantsir, S-400, Patriot) ve Kriptolu/Darbe-Patlama telsiz ağları her zaman brifinglerin ilk sırasında yer almalıdır.
+Elektronik Harp'te radar tehditlerinin frekans spektrumundaki kullanım yoğunluğu analiz edilirken iki temel metrik birbirinden kesin olarak ayrılmalıdır:
+
+### A. Frekans Bandı Kapsama Oranı (Interval Union %)
+* **Tanım:** Tanımlı bir frekans kanalı (örneğin 50 MHz genişliğindeki `4500 - 4550 MHz` aralığı) içinde düşman veya dost radar yayınlarının kapladığı net frekans genişliğidir:
+  $$\text{Doluluk Oranı (\%)} = \frac{\text{Aralıkların Geometrik Birleşimi (Net Kaplanan MHz)}}{\text{Kanal Bant Genişliği (50 MHz)}} \times 100$$
+* **Önemli Doktrinel Kural:**
+  Eğer bir radar (örneğin S-400 92N6E) `9200 - 9280 MHz` arasında yayın yapıyorsa;
+  * **Son 1 saatte** de bu kanalın 50 MHz'lik kısmına basmıştır (**%100**).
+  * **Son 24 saatte** de aynı frekans bandına basmaya devam etmiştir (**%100**).
+  * Radar frekansını daraltmadığı veya başka bir banda kaymadığı sürece, **frekans bazlı doluluk oranı zaman aralığından bağımsız olarak %100 kalabilir. Bu bir hata değil, radarın aynı frekansta yayın yapmaya devam ettiğinin kanıtıdır.**
+
+### B. Zaman-Frekans Temas Trafiği (Activity / Pulse Density)
+* **Tanım:** İlgili zaman diliminde o kanalda tespit edilen toplam darbe veya yayın adedidir.
+* 1 saat ile 24 saat arasındaki gerçek fark burada ortaya çıkar:
+  * Son 1 Saat: 15.464 tespit
+  * Son 24 Saat: 78.025 tespit (5 kat trafik artışı)
+* Raporlamada mutlaka hem frekans doluluk oranı (`%`) hem de tespit sayısı (`temas`) birlikte verilmelidir.
+
+---
+
+## 5. Teşhis Kimliği (Identity) Standart Renk Kodları
+
+Askeri Komuta Kontrol (C2) arayüzlerinde NATO APP-6 standartlarına uyumlu ve karanlık temada yüksek kontrastlı renk kodlaması uygulanır:
+
+| Teşhis Kimliği | Standart Anlamı | Hex Kodu | Degrade Tonları | Görsel Karakteristik |
+| :--- | :--- | :---: | :---: | :---: |
+| **DÜŞMAN (Hostile)** | Teyitli Düşman / Tehdit | `#ef4444` | `#f87171` $\rightarrow$ `#dc2626` | Parlak Kırmızı |
+| **MUHTEMEL DÜŞMAN (Suspect)** | Şüpheli / Düşman Olabilir | `#f97316` | `#fb923c` $\rightarrow$ `#ea580c` | Taktiksel Turuncu |
+| **BİLİNMEYEN (Unknown)** | Teşhis Edilememiş Emisyon | `#eab308` | `#fde047` $\rightarrow$ `#ca8a04` | Taktiksel Sarı |
+| **DOST (Friend)** | Teyitli Dost Unsur / Müttefik | `#10b981` | `#34d399` $\rightarrow$ `#059669` | Zümrüt Yeşili |
+| **TARAFSIZ (Neutral)** | Sivil / Ticari / Tarafsız | `#a855f7` | `#c084fc` $\rightarrow$ `#9333ea` | **Canlı Mor / Menekşe** |
+
+---
+
+## 6. Yapay Zeka Taktiksel Raporlama Kuralları
+
+Copilot veya Ajan taktik brifing üretirken şu 4 altın kurala uymalıdır:
+
+1. **Peşin Hükümlü Etiketleme Yapma:** Çocuksuz elipsleri operatör notunda veya hedef kaynağında açıkça yazmadıkça "Link-16" olarak adlandırma; "Harici Taktik Link / Doğrudan Kestirim" olarak belirt.
+2. **Oranları Mutlaka Belirt:** Kerteriz hattı raporlarken Başıboş LOB oranını (`basibos_lob / total_lob * 100%`) daima belirt. %50'nin üzerindeki başıboşluk oranı düşmanın gizlenme veya arazi maskelemesi yaptığına işaret eder.
+3. **Zaman-Kapsam Ayrımını Vurgula:** Taktiksel anlık hareket ("Son 1 saat") ile stratejik yaşam döngüsü ("Son 24 saat") analizini net olarak ayır; frekans kapsama yüzdesinin yanında mutlaka tespit adedini raporla.
+4. **Tehdit Önceliği Sıralaması:** Atış Kontrol radarları (S-400, Pantsir, Patriot) ve Kriptolu/Darbe-Patlama telsizleri her zaman brifinglerin en üstünde kırmızı uyarıyla yer almalıdır.

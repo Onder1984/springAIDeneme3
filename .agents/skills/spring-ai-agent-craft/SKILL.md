@@ -1,21 +1,32 @@
 ---
 name: spring-ai-agent-craft
 description: >-
-  Best practices and implementation patterns for building deterministic, resilient AI Agents
-  and Copilots using Spring Boot 3.3+, Spring AI 1.x, and LLMs (Gemini/OpenAI). Covers @Tool /
-  Function Calling registration, record DTO serialization, MessageChatMemoryAdvisor, conversationId
-  session management, native query multi-column array mapping, and retry/circuit-breaker resilience.
+  Spring Boot 3.3+ ve Spring AI 1.x ile deterministik, kurumsal ve askeri yapay zeka ajanları (Copilot)
+  inşa etmek için en iyi uygulamalar ve mimari kalıplar. @Tool / Function Calling mekanizmaları,
+  kayıt (record) DTO serileştirmesi, MessageChatMemoryAdvisor oturum yönetimi, JPA native query çoklu kolon
+  dizi dönüşümü (gotcha çözümleri), Spektrum Doluluk analizi entegrasyonu ve üstel geri çekilmeli (retry)
+  hata toleransı kalıplarını kapsar.
 ---
 
-# Spring AI Agent & Function Calling Craft
+# Spring AI Ajan Mimarisi ve Fonksiyon Çağrısı (Function Calling) Rehberi
 
-This skill provides architecture guidelines and implementation patterns for building production-grade AI agents using **Spring AI 1.x** and **Spring Boot 3.3+**.
+Bu yetenek dokümanı, **Spring Boot 3.3+** ve **Spring AI 1.x** (Gemini / OpenAI altyapıları) kullanarak görev kritik, deterministik ve yüksek performanslı askeri Elektronik Harp (EH / C2) yapay zeka ajanları geliştirmek için gereken mimari standartları ve kodlama kalıplarını sunar.
 
 ---
 
-## 1. ChatClient Fluent Architecture & Tool Binding
+## 1. ChatClient Akıcı (Fluent) Mimarisi ve Araç Bağlama (Tool Binding)
+
+Spring AI 1.x sürümünde ajan yapılandırması `ChatClient.Builder` üzerinden akıcı (fluent) arayüz ile kurulmalıdır. Sistem talimatı (System Directive), araçlar (`@Tool` sınıfları) ve oturum belleği (ChatMemory) kurucu enjeksiyonu ile tek bir noktada yapılandırılır.
 
 ```java
+package com.c2.ew.agent.service;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 @Service
 public class TacticalAgentService {
 
@@ -42,60 +53,105 @@ public class TacticalAgentService {
 }
 ```
 
----
-
-## 2. Multi-Turn Session Memory (ChatMemory)
-
-* Always isolate sessions by passing `chat_memory_conversation_id`:
-```java
-String briefing = chatClient.prompt()
-    .advisors(spec -> spec.param("chat_memory_conversation_id", conversationId))
-    .user(userPrompt)
-    .call()
-    .content();
-```
-* **Critical Rule:** In Spring AI request DTOs, use matching parameter names (e.g. `userPrompt` in Java record must match `userPrompt` in JSON payload, not `prompt`).
+* **Önemli Kural:** `defaultTools` metoduna servis nesneleri doğrudan geçilebilir. Spring AI, sınıf içindeki `@Tool` anotasyonlu metotları otomatik tarayarak LLM için JSON şemasına (Function Specification) dönüştürür.
 
 ---
 
-## 3. Spring AI @Tool Function Calling Guidelines
+## 2. Çok Turlu Oturum Belleği Yönetimi (`conversationId`)
 
-1. **Clear Descriptions:** `@Tool(description = "...")` must detail both what the tool does AND when the LLM should invoke it.
-2. **Primitive Wrapper Types:** Always use `Integer`, `Double`, `Boolean` instead of primitive types (`int`, `double`) so arguments can be optional/nullable.
-3. **ThreadLocal Call Logging:** Maintain auditability by capturing tool calls in a `ThreadLocal<List<String>>`:
+Operatör ile ajan arasındaki çok turlu (multi-turn) taktiksel diyalogların birbirine karışmaması için her oturum kesinlikle benzersiz bir `conversationId` (örneğin UUID veya kokpit oturum ID'si) ile yalıtılmalıdır:
+
 ```java
-public class RadarEmissionTools {
-    private static final ThreadLocal<List<String>> CALL_LOGS = ThreadLocal.withInitial(ArrayList::new);
-
-    public static List<String> drainCallLogs() {
-        List<String> logs = new ArrayList<>(CALL_LOGS.get());
-        CALL_LOGS.get().clear();
-        return logs;
-    }
+public String askCopilot(String userPrompt, String conversationId) {
+    return chatClient.prompt()
+        .advisors(spec -> spec.param("chat_memory_conversation_id", conversationId))
+        .user(userPrompt)
+        .call()
+        .content();
 }
 ```
 
+### ⚠️ Kritik DTO Parametre Kuralı
+Spring Boot REST Controller katmanında gelen JSON gövdesi `record` veya DTO ile eşleştirilirken alan adları büyük/küçük harf duyarlı olarak birebir örtüşmelidir:
+* Java record: `public record AgentChatRequest(String userPrompt, String conversationId) {}`
+* JSON gövdesi: `{"userPrompt": "Spektrum doluluk oranını göster", "conversationId": "sess-102"}`
+* Eğer DTO `userPrompt` beklerken frontend `prompt` gönderirse alan `null` kalır ve `IllegalArgumentException: User prompt must not be blank` hatası oluşur.
+
 ---
 
-## 4. JPA Native Query Multi-Column Gotcha in Spring Data
+## 3. Spring AI `@Tool` Fonksiyon Tanımlama Kuralları
 
-When calling native queries with multiple columns without an entity mapping:
-* **The Gotcha:** Spring Data JPA returns `Object[]` or `List<Object[]>`. In single-row queries, `counts[0]` is often an `Object[]` array itself (`[Ljava.lang.Object;`), causing `ClassCastException` if cast directly to `Number`.
-* **The Bulletproof Solution:**
+LLM'in araçları hatasız ve doğru zamanda tetiklemesi için şu kurallar zorunludur:
+
+1. **Açıklayıcı `@Tool` Tanımı (`description`):**
+   Açıklama sadece aracın ne yaptığını değil, **LLM'in hangi kullanıcı sorularında bu aracı çağırması gerektiğini** de açıkça belirtmelidir.
+   ```java
+   @Tool(description = "Radar frekans spektrumunun doluluk ve bant kullanım yoğunluğunu hesaplar. " +
+                       "Kullanıcı 'spektrum doluluk', 'frekans kullanımı', 'radar doluluk durumu', " +
+                       "'spektrum analizi' gibi sorular sorduğunda bu fonksiyonu çağırın.")
+   public String calculateSpectrumOccupancy(
+       @ToolParam(description = "Zaman aralığı: SON_1_SAAT, SON_6_SAAT, SON_24_SAAT, SON_1_HAFTA, ALL") String timeRange,
+       @ToolParam(description = "Teşhis kimliği filtresi: DUSMAN, DOST, BILINMEYEN, TARAFSIZ, HEPSI") String teshisKimlik
+   ) { ... }
+   ```
+
+2. **İlkel Tip (Primitive) Yerine Sarmalayıcı (Wrapper) Tipler:**
+   Parametrelerde `int`, `double`, `boolean` yerine daima `Integer`, `Double`, `Boolean` kullanılmalıdır. Böylece operatör opsiyonel parametre belirtmediğinde LLM `null` gönderebilir ve metot patlamaz.
+
+3. **Denetim ve Loglama İçin `ThreadLocal` Kullanımı:**
+   Ajana gelen bir sorguda hangi araçların tetiklendiğini REST yanıtında veya UI telemetrisinde gösterebilmek için `ThreadLocal` çağrı günlüğü tutulmalıdır:
+   ```java
+   public class RadarEmissionTools {
+       private static final ThreadLocal<List<String>> CALL_LOGS = ThreadLocal.withInitial(ArrayList::new);
+
+       protected void logCall(String toolName, Object... args) {
+           CALL_LOGS.get().add(toolName + "(" + Arrays.toString(args) + ")");
+       }
+
+       public static List<String> drainCallLogs() {
+           List<String> logs = new ArrayList<>(CALL_LOGS.get());
+           CALL_LOGS.get().clear();
+           return logs;
+       }
+   }
+   ```
+
+---
+
+## 4. Spektrum Doluluk Analizi & Ajan Entegrasyonu (Interval Union)
+
+Elektronik Harp'te radarlar tek bir frekans noktası yerine bir frekans aralığında (`minFrekansMhz` - `maxFrekansMhz`) çalışır. Spektrum doluluk hesaplamasında:
+
+1. **Sabit Dar Bant Dilimleme (Bin Step, örn. 50 MHz):**
+   Frekans ekseni sabit aralıklara bölünür (`[4500-4550]`, `[4550-4600]`, `[9200-9250]`).
+2. **Geometrik Aralık Birleşimi (Interval Union):**
+   Aynı kanala basan birden fazla radarın frekans aralıkları üst üste çakışsa bile kanal genişliğini aşmayacak şekilde birleştirilir:
+   $$\text{Doluluk (\%)} = \frac{\text{Aralıkların Birleşimi (Net Kaplanan MHz)}}{\text{Kanal Bant Genişliği (50 MHz)}} \times 100$$
+3. **Markdown Tablosu Çıktısı:**
+   Ajan aracı çalıştırdığında kullanıcıya doğrudan okunaklı bir Markdown tablosu ve aynı anda ön yüzde grafiği tetikleyecek yapılandırılmış veri DTO'su döndürmelidir.
+
+---
+
+## 5. JPA Native Query Çok Kolonlu Dizi Dönüşüm Tuzağı (Gotcha & Çözümü)
+
+Spring Data JPA'da varlık (entity) eşlemesi olmayan çok kolonlu yerel (native) sorgularda:
+* **Tuzak:** Tek satırlı sorgularda Spring Data JPA `Object[]` yerine `counts[0]` elemanının içine bir `Object[]` dizisi daha sararak (`[Ljava.lang.Object;`) dönebilir. Doğrudan `(Number) result[0]` yapıldığında `ClassCastException` fırlar.
+* **Garantili ve Güvenli Çözüm:**
 ```java
 Object[] raw = repo.getHierarchyCounts(start, end);
 Object[] row = raw;
-if (raw != null && raw.length > 0 && raw[0] instanceof Object[]) {
-    row = (Object[]) raw[0];
+if (raw != null && raw.length > 0 && raw[0] instanceof Object[] innerRow) {
+    row = innerRow;
 }
 
-long total = extractLong(row, 0);
+long totalCount = extractLong(row, 0);
+long childedCount = extractLong(row, 1);
 
 private long extractLong(Object[] arr, int index) {
     if (arr == null || index >= arr.length || arr[index] == null) return 0L;
     if (arr[index] instanceof Number num) return num.longValue();
     try {
-        return Long.parseLong(arr[index].toString());
+        return Long.parseLong(arr[index].toString().trim());
     } catch (Exception e) {
         return 0L;
     }
@@ -104,17 +160,23 @@ private long extractLong(Object[] arr, int index) {
 
 ---
 
-## 5. Resilience: Exponential Backoff Retry Pattern
+## 6. Hata Dayanıklılığı: Üstel Geri Çekilme (Exponential Backoff Retry)
 
-LLM APIs can suffer temporary rate limits (HTTP 429) or timeouts:
+Uzak LLM servisleri (Gemini API / OpenAI) ağ gecikmeleri veya anlık hız kısıtlamaları (`HTTP 429 Too Many Requests`) yaşayabilir. Ajan servis katmanında mutlaka üstel geri çekilmeli yeniden deneme (retry) döngüsü bulunmalıdır:
+
 ```java
 int maxRetries = 3;
 for (int attempt = 1; attempt <= maxRetries; attempt++) {
     try {
         return chatClient.prompt().user(prompt).call().content();
     } catch (Exception ex) {
-        if (attempt == maxRetries) throw ex;
-        Thread.sleep(1200L * attempt);
+        if (attempt == maxRetries) {
+            log.error("LLM çağrısı {} deneme sonrasında başarısız oldu: {}", maxRetries, ex.getMessage());
+            throw ex;
+        }
+        long waitTimeMs = 1200L * attempt;
+        log.warn("LLM API hatası, {} ms sonra tekrar deneniyor (Deneme: {}/{})", waitTimeMs, attempt, maxRetries);
+        Thread.sleep(waitTimeMs);
     }
 }
 ```

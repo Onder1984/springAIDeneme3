@@ -1,22 +1,22 @@
 ---
 name: ant-design-c2-ui
 description: >-
-  Expert guidance for designing and implementing modern enterprise Command and Control (C2),
-  telemetry, and tactical defense user interfaces using Ant Design (v5.x), React, and modern
-  JavaScript/TypeScript. Covers high-performance data tables with virtual scroll, tree/hierarchy
-  components, drawer inspector panels, status badges, military dark themes, WebSocket/STOMP
-  live feeds, and real-time state management.
+  Ant Design (v5.x), React ve modern JavaScript/TypeScript kullanarak kurumsal Komuta Kontrol (C2),
+  telemetri ve taktiksel savunma kullanıcı arayüzleri geliştirme rehberi. Yüksek performanslı sanal tablolar,
+  ağaç/hiyerarşi bileşenleri, detay çekmeceleri (drawer), askeri koyu tema (MIL-Dark), WebSocket/STOMP
+  canlı veri akışları, ECharts taktiksel grafik hayat döngüsü (chart.clear, replaceMerge, legendselectchanged)
+  ve gerçek zamanlı state yönetimi standartlarını kapsar.
 ---
 
-# Ant Design & Modern JS/TS for Tactical C2 Systems
+# Komuta Kontrol (C2) ve Taktik Savunma Sistemleri İçin Ant Design & React Rehberi
 
-This skill guides the design, implementation, and optimization of mission-critical defense, telemetry, and Electronic Warfare (EW / C2) user interfaces using **Ant Design (antd v5.x)**, **React**, and **TypeScript/JavaScript**.
+Bu yetenek dokümanı, **Ant Design (antd v5.x)**, **React** ve **modern JavaScript/TypeScript** kullanarak görev kritik Elektronik Harp (EH / C2), telemetri izleme ve taktik karar destek arayüzleri geliştirmek için gereken tasarım sistemini ve performans kalıplarını tanımlar.
 
 ---
 
-## 1. Tactical Dark Military Theme Configuration (ConfigProvider)
+## 1. Askeri Koyu Tema (MIL-Dark ConfigProvider)
 
-In tactical operations centers, screens must avoid eye fatigue, maintain high contrast under low ambient light, and highlight threats immediately.
+Taktik harekât merkezlerinde (C2 TOC) ekranlar göz yorgunluğunu önlemeli, düşük ortam ışığında yüksek kontrast sunmalı ve kritik tehditleri (kırmızı/turuncu) anında öne çıkarmalıdır.
 
 ```tsx
 import React from 'react';
@@ -28,15 +28,15 @@ export const TacticalThemeProvider: React.FC<{ children: React.ReactNode }> = ({
       theme={{
         algorithm: theme.darkAlgorithm,
         token: {
-          colorPrimary: '#1890ff',     // Taktik Mavi (Dost)
-          colorSuccess: '#52c41a',     // Güvenli / Teyitli
-          colorWarning: '#fa8c16',     // Şüpheli / Muhtemel Düşman
-          colorError: '#f5222d',       // Kritik Tehdit / Düşman / Atış Kontrol
-          colorInfo: '#13c2c2',        // Bilgi / Link-16 / Harici
-          colorBgBase: '#0b132b',      // Derin Taktik Lacivert
-          colorBgContainer: '#1c2541', // Kart ve Tablo Arka Planı
-          colorBorder: '#3a506b',      // İnce Askeri Ayırıcılar
-          fontFamily: "'Inter', 'Roboto Mono', -apple-system, sans-serif",
+          colorPrimary: '#38bdf8',     // Taktik Camgöbeği / Mavi
+          colorSuccess: '#10b981',     // Dost Unsur / Güvenli
+          colorWarning: '#f97316',     // Şüpheli / Muhtemel Düşman
+          colorError: '#ef4444',       // Kritik Tehdit / Düşman
+          colorInfo: '#a855f7',        // Tarafsız / Sivil (Taktiksel Mor)
+          colorBgBase: '#0b1329',      // Derin Taktik Gece Mavisi
+          colorBgContainer: '#0f172a', // Kart, Panel ve Tablo Arka Planı
+          colorBorder: '#1e293b',      // İnce Askeri Ayırıcı Çizgiler
+          fontFamily: "'Inter', 'JetBrains Mono', 'Roboto Mono', sans-serif",
           borderRadius: 4,             // Keskin askeri köşeler (yuvarlak değil)
         },
       }}
@@ -49,233 +49,180 @@ export const TacticalThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 
 ---
 
-## 2. High-Performance Virtualized Defense Tables (Table)
+## 2. Yüksek Performanslı Taktik Tablolar (AntD Table)
 
-When handling 10,000+ radar or COMINT emissions, regular DOM rendering causes lag. Always use pagination or virtualized scrolling.
+On binlerce radar veya telsiz emisyonunun aktığı ortamlarda DOM tıkanmasını önlemek için sanal kaydırma (virtual scroll) veya sayfalama uygulanmalıdır.
 
-### A. Identification Badges & Tag Component
+### A. Tehdit ve Hiyerarşi Rozetleri (Badges & Tags)
 ```tsx
 import { Tag, Badge } from 'antd';
 
-export const renderThreatTag = (teshis: string) => {
-  switch (teshis) {
+export const renderIdentityTag = (identity: string) => {
+  switch (identity) {
     case 'DUSMAN':
-      return <Tag color="#f5222d" style={{ fontWeight: 600 }}>DÜŞMAN</Tag>;
+      return <Tag color="#ef4444" style={{ fontWeight: 600 }}>DÜŞMAN</Tag>;
     case 'MUHTEMEL_DUSMAN':
-      return <Tag color="#fa8c16">MUHTEMEL DÜŞMAN</Tag>;
+      return <Tag color="#f97316">MUHT. DÜŞMAN</Tag>;
+    case 'BILINMEYEN':
+      return <Tag color="#eab308">BİLİNMEYEN</Tag>;
     case 'DOST':
-      return <Tag color="#52c41a">DOST</Tag>;
+      return <Tag color="#10b981">DOST</Tag>;
     case 'TARAFSIZ':
-      return <Tag color="#1890ff">TARAFSIZ</Tag>;
+      return <Tag color="#a855f7" style={{ fontWeight: 600 }}>TARAFSIZ</Tag>;
     default:
-      return <Tag color="#d9d9d9">BİLİNMEYEN</Tag>;
+      return <Tag color="#64748b">{identity}</Tag>;
   }
 };
 ```
 
-### B. Table Columns with Custom Sorting, Filtering & Formats
+### B. Başıboş vs. Bağlı LOB Gösterimi
 ```tsx
-import { Table, Space, Button, Tooltip } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-
-export interface TacticalEmissionRow {
-  id: string;
-  radarAdi: string;
-  teshis: string;
-  frekansMhz: number;
-  kayitTipi: 'KESTIRIM_ELIPS' | 'HAM_LOB';
-  cocukSayisi?: number;
-  sonTespitZamani: string;
-}
-
-export const emissionColumns = (onInspect: (id: string) => void): ColumnsType<TacticalEmissionRow> => [
-  {
-    title: 'Kayıt ID',
-    dataIndex: 'id',
-    key: 'id',
-    width: 140,
-    render: (id) => <span style={{ fontFamily: 'monospace', color: '#6fffe9' }}>[{id}]</span>,
-  },
-  {
-    title: 'Radar / Unsur Adı',
-    dataIndex: 'radarAdi',
-    key: 'radarAdi',
-    sorter: (a, b) => a.radarAdi.localeCompare(b.radarAdi),
-  },
-  {
-    title: 'Teşhis',
-    dataIndex: 'teshis',
-    key: 'teshis',
-    render: renderThreatTag,
-    filters: [
-      { text: 'DÜŞMAN', value: 'DUSMAN' },
-      { text: 'MUHTEMEL DÜŞMAN', value: 'MUHTEMEL_DUSMAN' },
-      { text: 'DOST', value: 'DOST' },
-    ],
-    onFilter: (value, record) => record.teshis === value,
-  },
-  {
-    title: 'Frekans (MHz)',
-    dataIndex: 'frekansMhz',
-    key: 'frekansMhz',
-    align: 'right',
-    sorter: (a, b) => a.frekansMhz - b.frekansMhz,
-    render: (val) => val ? `${val.toLocaleString()} MHz` : '-',
-  },
-  {
-    title: 'Hiyerarşi / Durum',
-    key: 'durum',
-    render: (_, r) => {
-      if (r.kayitTipi === 'KESTIRIM_ELIPS') {
-        const cc = r.cocukSayisi || 0;
-        return cc > 0 ? (
-          <Badge status="processing" color="#52c41a" text={`Çocuklu (${cc} LOB)`} />
+export const renderLobStatus = (val: string, record: any) => {
+  if (val === 'HAM_LOB') {
+    return (
+      <div>
+        <Tag color="orange" style={{ fontWeight: 600, fontSize: 11 }}>HAM LOB</Tag>
+        {record.kestirimId ? (
+          <div style={{ fontSize: 10, color: '#38bdf8', marginTop: 2 }}>
+            Bağlı: <Tag color="blue" style={{ fontSize: 9, padding: '0 4px', margin: 0 }}>{record.kestirimId}</Tag>
+          </div>
         ) : (
-          <Badge status="default" color="#1890ff" text="Çocuksuz (Doğrudan/Veri Bağı)" />
-        );
-      }
-      return <Badge status="warning" text="Ham LOB" />;
-    },
-  },
-  {
-    title: 'İşlem',
-    key: 'action',
-    width: 100,
-    render: (_, r) => (
-      <Button size="small" type="primary" ghost onClick={() => onInspect(r.id)}>
-        İncele
-      </Button>
-    ),
-  },
-];
-```
-
----
-
-## 3. Tree & Hierarchy Component for Ellipse-LOB Association
-
-Visualize parent-child relationships using `Tree` or `Table` expandable rows:
-
-```tsx
-import React from 'react';
-import { Table } from 'antd';
-
-export const HierarchyExpandableTable: React.FC<{ data: any[] }> = ({ data }) => {
-  return (
-    <Table
-      columns={parentColumns}
-      expandable={{
-        expandedRowRender: (record) => (
-          <Table
-            columns={childLobColumns}
-            dataSource={record.childLobs}
-            pagination={false}
-            size="small"
-          />
-        ),
-        rowExpandable: (record) => record.childLobs && record.childLobs.length > 0,
-      }}
-      dataSource={data}
-    />
-  );
+          <div style={{ fontSize: 10, color: '#fbbf24', marginTop: 2 }}>
+            ⚠️ Başıboş LOB
+          </div>
+        )}
+      </div>
+    );
+  }
+  return <Tag color="cyan" style={{ fontWeight: 600, fontSize: 11 }}>KESTİRİM</Tag>;
 };
 ```
 
 ---
 
-## 4. Emitter Telemetry Drawer Inspector (Drawer & Descriptions)
+## 3. ECharts Taktik Görselleştirme Hayat Döngüsü & Kritik Çözümler
 
-When an operator clicks "İncele" on a target, use Ant Design's `Drawer` to open a high-density parameters panel:
+ECharts kütüphanesini React içinde kullanırken karşılaşılan hayati tuzaklar ve kesin çözümleri:
 
-```tsx
-import { Drawer, Descriptions, Tag, Progress } from 'antd';
+### ⚠️ Gotcha 1: Serilerin Tuvalde Asılı Kalması (`chart.clear()` ve `replaceMerge`)
+* **Problem:** Kullanıcı grafikte örneğin `DOST` (yeşil) serisini açıp sonra kapattığında, ECharts serileri birleştirdiği (merge ettiği) için yeşil barlar tuvalden silinmez ve ekranda kalmaya devam eder.
+* **Kesin Çözüm:** Her `setOption` öncesinde mutlaka `chart.clear()` çağrılmalı ve `replaceMerge` parametresi verilmelidir:
+```javascript
+// Tuvaldeki eski serileri ve lejantı tamamen süpür
+chart.clear();
 
-export const EmitterDrawer: React.FC<{ open: boolean; onClose: () => void; emitter: any }> = ({
-  open,
-  onClose,
-  emitter,
-}) => {
-  if (!emitter) return null;
-
-  return (
-    <Drawer
-      title={`Hedef Detay İnceleme: [${emitter.id}] ${emitter.radarAdi || emitter.cagriAdi}`}
-      placement="right"
-      width={560}
-      onClose={onClose}
-      open={open}
-      styles={{ body: { backgroundColor: '#1c2541' } }}
-    >
-      <Descriptions bordered size="small" column={2}>
-        <Descriptions.Item label="Teşhis">{renderThreatTag(emitter.teshis)}</Descriptions.Item>
-        <Descriptions.Item label="Kayıt Tipi">{emitter.kayitTipi}</Descriptions.Item>
-        <Descriptions.Item label="Frekans Aralığı">
-          {emitter.minFrekansMhz} - {emitter.maxFrekansMhz} MHz
-        </Descriptions.Item>
-        <Descriptions.Item label="PRI / PW">
-          {emitter.priMicroSec} µs / {emitter.pwMicroSec} µs
-        </Descriptions.Item>
-        <Descriptions.Item label="Modülasyon">{emitter.modulasyon || 'SABİT'}</Descriptions.Item>
-        <Descriptions.Item label="Elektronik Taarruz (ET)">
-          {emitter.etUygulamaDurumu ? <Tag color="red">AKTİF KARIŞTIRMA</Tag> : <Tag color="green">YOK</Tag>}
-        </Descriptions.Item>
-        <Descriptions.Item label="Hedef Konum (Lat/Lon)" span={2}>
-          {emitter.yayinEnlem?.toFixed(4)} K, {emitter.yayinBoylam?.toFixed(4)} D
-        </Descriptions.Item>
-        <Descriptions.Item label="Hata Elipsi (CEP)" span={2}>
-          {emitter.yayinSemiMajorMeters} m x {emitter.yayinSemiMinorMeters} m
-        </Descriptions.Item>
-        <Descriptions.Item label="Operatör Notu" span={2}>
-          {emitter.operatorNotu || 'Standart taktik iz.'}
-        </Descriptions.Item>
-      </Descriptions>
-    </Drawer>
-  );
-};
+chart.setOption(option, {
+  notMerge: true,
+  replaceMerge: ['series', 'legend', 'xAxis', 'yAxis']
+});
 ```
 
----
+### ⚠️ Gotcha 2: Lejantın Çift Yönlü Senkronizasyonu (`legendselectchanged`)
+* **Problem:** Kullanıcı grafik üzerindeki lejant kutucuğuna (örn. "DOST") tıkladığında ECharts seriyi yerel olarak gizler ancak üstteki filtre butonları (`Tag`) ve tablo güncellenmez.
+* **Kesin Çözüm:** `legendselectchanged` olayını dinleyip React state fonksiyonunu tetiklemek:
+```javascript
+chart.off('legendselectchanged');
+chart.on('legendselectchanged', (params) => {
+  const LABEL_TO_KEY = {
+    'DÜŞMAN': 'DUSMAN',
+    'MUHT. DÜŞMAN': 'MUHTEMEL_DUSMAN',
+    'BİLİNMEYEN': 'BILINMEYEN',
+    'DOST': 'DOST',
+    'TARAFSIZ': 'TARAFSIZ'
+  };
+  const key = LABEL_TO_KEY[params.name] || params.name;
+  if (key) {
+    toggleIdentity(key);
+  }
+});
+```
 
-## 5. Real-Time WebSocket / STOMP Updates in React
+### ⚠️ Gotcha 3: Tek Seride Lejantın Açıkça Kapatılması
+* Tek seri varken `legend: undefined` geçilirse ECharts eski çoklu seriden kalan lejantı silmez. Açıkça kapatılmalıdır:
+```javascript
+legend: {
+  show: !isSingleIdentity,
+  data: legendNames,
+  top: 4,
+  right: 16,
+  textStyle: { color: '#cbd5e1', fontSize: 11 }
+}
+```
 
-To handle live streaming telemetry without full table re-renders:
+### ⚠️ Gotcha 4: Modal / Dialog İçinde ECharts Tuvalinin Boş (0x0) Kalması
+* **Problem:** Ant Design `Modal` bileşeni portal (`document.body`) kullandığından, `modalVisible` `true` olduğu ilk render döngüsünde `modalChartRef.current` henüz `null`'dur. Basit `useEffect([modalVisible])` kontrolünde `if (!modalChartRef.current) return;` erken döner ve `useRef` değişimi yeni render tetiklemediği için grafik tuvali hiç oluşturulmaz (ekranda sadece boş koyu mavi modal penceresi kalır). Ayrıca modal açılış animasyonu (`scale`) sırasında tuval 0x0 piksel boyutlanır.
+* **Kesin Çözüm (Üçlü Garanti Kalıbı):**
+  1. **Callback Ref:** Modal içindeki `div` DOM'a eklenir eklenmez yakalamak için `ref={(el) => { modalChartRef.current = el; if(el && modalVisible) renderModal(el); }}` kullanılmalıdır.
+  2. **`afterOpenChange` Olayı:** Modal animasyonu tamamlanıp kutu tam boyutuna ulaştığında `<Modal afterOpenChange={(open) => { if (open) renderModal(); }}>` ile boyutlama tetiklenmelidir.
+  3. **Aşamalı `resize()`:** Render fonksiyonu içinde `50ms` ve `250ms` aralıklarla `chart.resize()` yinelenmelidir.
 
-```ts
-import { useEffect, useRef } from 'react';
-import { Client } from '@stomp/stompjs';
 
-export function useTacticalStream(onEmissionReceived: (emission: any) => void) {
-  const stompClientRef = useRef<Client | null>(null);
-
-  useEffect(() => {
-    const client = new Client({
-      brokerURL: 'ws://localhost:8082/ws-tactical',
-      reconnectDelay: 3000,
-      onConnect: () => {
-        client.subscribe('/topic/live-emissions', (message) => {
-          if (message.body) {
-            const data = JSON.parse(message.body);
-            onEmissionReceived(data);
-          }
-        });
-      },
-    });
-
-    client.activate();
-    stompClientRef.current = client;
-
-    return () => {
-      client.deactivate();
-    };
-  }, [onEmissionReceived]);
+### 💡 Bar Üstü Etiketinde Yüzde + Temas Sayısı Gösterimi
+Operatör zaman filtresini değiştirdiğinde (1 saat $\rightarrow$ 24 saat), frekans kapsama yüzdesi aynı kalsa bile temas sayısındaki 5 katlık artışı hemen görebilmelidir:
+```javascript
+label: {
+  show: true,
+  position: 'top',
+  formatter: (p) => {
+    if (!p || p.value <= 0) return '';
+    const cnt = p.data?.detailInfo?.emissionCount;
+    const cStr = cnt != null && cnt > 0 ? (cnt >= 1000 ? (cnt / 1000).toFixed(1) + 'k' : cnt) : null;
+    return cStr ? `%${p.value}\n(${cStr})` : `%${p.value}`;
+  },
+  color: '#f8fafc',
+  fontSize: 9,
+  fontWeight: 'bold',
+  lineHeight: 12
 }
 ```
 
 ---
 
-## 6. Best Practices for Ant Design in Defense Apps
+## 4. Taktiksel Filtreleme Düğmeleri (Checkable Tag & Rozet)
 
-1. **Avoid Layout Shift:** Always reserve fixed pixel heights for tables and charts.
-2. **Dense Information Display:** Use `size="small"` on `Table`, `Descriptions`, and `Form` to fit maximum intelligence per viewport.
-3. **Monospace for Identifiers:** All coordinates, frequencies, timestamps, and IDs should be styled with `font-family: monospace` for instant vertical alignment.
-4. **Debounced Search:** Always debounce text searches on 100K+ tables by 300ms using `useDebounce`.
+Filtre butonlarının açık/kapalı durumunu anında hissettirmek için taktiksel onay rozetleri kullanılmalıdır:
+
+```tsx
+{Object.keys(IDENTITY_CONFIG).map(idKey => {
+  const cfg = IDENTITY_CONFIG[idKey];
+  const isSel = selectedIdentities.includes(idKey);
+  return (
+    <span
+      key={idKey}
+      onClick={() => handleToggle(idKey)}
+      style={{
+        fontSize: 10,
+        padding: '2px 8px',
+        borderRadius: 4,
+        cursor: 'pointer',
+        userSelect: 'none',
+        border: isSel ? `1px solid ${cfg.color}` : '1px solid #334155',
+        backgroundColor: isSel ? `${cfg.color}26` : 'transparent',
+        color: isSel ? cfg.color : '#94a3b8',
+        fontWeight: isSel ? 700 : 400,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4
+      }}
+    >
+      <span>{isSel ? '✓' : '○'}</span>
+      {cfg.label}
+    </span>
+  );
+})}
+```
+
+---
+
+## 5. Canlı Telemetri ve STOMP / WebSocket Entegrasyonu
+
+Canlı radar ve COMINT verisi akarken React state'inin kilitlenmemesi için:
+1. **Fonksiyonel State Güncellemesi:**
+   ```tsx
+   setSelectedIdentities(prev => {
+     const next = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key];
+     return next.length === 0 ? ['DUSMAN'] : next;
+   });
+   ```
+2. **STOMP Abonelik İptali (Cleanup):**
+   `useEffect` temizleme bloğunda abonelikler mutlaka `subscription.unsubscribe()` ile sonlandırılmalı, bellek sızıntıları önlenmelidir.

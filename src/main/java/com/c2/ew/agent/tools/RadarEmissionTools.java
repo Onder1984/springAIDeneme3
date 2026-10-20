@@ -21,10 +21,12 @@ import com.c2.ew.domain.model.GeoPoint;
 import com.c2.ew.agent.dto.TacticalDistributionDto;
 import com.c2.ew.agent.dto.TacticalWaveformTimelineDto;
 import com.c2.ew.agent.dto.RadarSpectrumOccupancyDto;
+import com.c2.ew.agent.dto.WeekdayRadarDistributionDto;
 import com.c2.ew.agent.service.RadarCorrelationService;
 import com.c2.ew.agent.service.RadarSpectrumOccupancyService;
 import com.c2.ew.agent.service.TacticalDistributionService;
 import com.c2.ew.agent.service.TacticalWaveformTimelineService;
+import com.c2.ew.agent.service.TacticalWeekdayRadarService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -78,6 +80,7 @@ public class RadarEmissionTools {
     private final TacticalWaveformTimelineService timelineService;
     private final RadarCorrelationService correlationService;
     private final RadarSpectrumOccupancyService spectrumOccupancyService;
+    private final TacticalWeekdayRadarService weekdayRadarService;
 
     public RadarEmissionTools(
         TacticalEmissionJpaRepository emissionRepo,
@@ -86,7 +89,8 @@ public class RadarEmissionTools {
         TacticalDistributionService distributionService,
         TacticalWaveformTimelineService timelineService,
         RadarCorrelationService correlationService,
-        RadarSpectrumOccupancyService spectrumOccupancyService
+        RadarSpectrumOccupancyService spectrumOccupancyService,
+        TacticalWeekdayRadarService weekdayRadarService
     ) {
         this.emissionRepo = emissionRepo;
         this.comintRepo = comintRepo;
@@ -95,6 +99,7 @@ public class RadarEmissionTools {
         this.timelineService = timelineService;
         this.correlationService = correlationService;
         this.spectrumOccupancyService = spectrumOccupancyService;
+        this.weekdayRadarService = weekdayRadarService;
     }
 
     private String cleanParam(String val) {
@@ -1480,4 +1485,27 @@ public class RadarEmissionTools {
     public RadarSpectrumOccupancyDto getRadarSpectrumOccupancy() {
         return getRadarSpectrumOccupancy("SON_24_SAAT", "DUSMAN");
     }
+
+    @Tool(description = "Haftanın günlerine (Pazartesi, Salı, Çarşamba, Perşembe, Cuma, Cumartesi, Pazar) göre Radar (ELINT) ve Muhabere (COMINT) LOB ve Kestirim Elipsi tespit sayılarını döner. Örümcek ağı (Spider / Radar) grafiği analizi için kullanılır. " +
+        "source: 'TUMU' (Radar + Muhabere), 'RADAR' veya 'COMINT'. Boş ise 'TUMU' alınır. " +
+        "recordType: 'TUMU' (LOB + Kestirim), 'SADECE_LOB' (HAM_LOB) veya 'SADECE_KESTIRIM' (KESTIRIM_ELIPS). Boş ise 'TUMU' alınır. " +
+        "timeRange: 'ALL' (Tüm zamanlar), 'SON_7_GUN', 'SON_30_GUN' veya 'SON_24_SAAT'. Boş ise 'ALL' alınır. " +
+        "Operatör 'haftanın günlerine göre radar ya da muhabere kestirim/ LOB sayısını grafiğini ver', 'haftalık LOB dağılımı', 'örümcek ağı grafiği', 'spider web grafiği' veya günlere göre tespit sayılarını sorduğunda KESİNLİKLE BU ARACI ÇAĞIR.")
+    public WeekdayRadarDistributionDto getWeekdayEmissionDistribution(String source, String recordType, String timeRange) {
+        CALL_LOGS.get().add(String.format("Tool Çağrısı: getWeekdayEmissionDistribution(source=%s, recordType=%s, timeRange=%s) çalıştırıldı.", source, recordType, timeRange));
+        return weekdayRadarService.calculateWeekdayDistribution(source, recordType, timeRange);
+    }
+
+    public WeekdayRadarDistributionDto getWeekdayEmissionDistribution(String source, String recordType) {
+        return getWeekdayEmissionDistribution(source, recordType, "ALL");
+    }
+
+    public WeekdayRadarDistributionDto getWeekdayEmissionDistribution(String source) {
+        return getWeekdayEmissionDistribution(source, "TUMU", "ALL");
+    }
+
+    public WeekdayRadarDistributionDto getWeekdayEmissionDistribution() {
+        return getWeekdayEmissionDistribution("TUMU", "TUMU", "ALL");
+    }
 }
+

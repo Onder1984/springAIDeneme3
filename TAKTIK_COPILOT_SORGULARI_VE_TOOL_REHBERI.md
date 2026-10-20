@@ -389,6 +389,62 @@ Bu rehber, **Spring AI (Gemini 3.5 Flash-Lite)** destekli Taktik C2 Copilot sist
 
 ---
 
+### KATEGORİ 11: Radar Spektrum Doluluk & Sabit Frekans Aralıkları Yoğunluk Analizi
+
+#### 11.1. Sabit Frekans Dilimleri (50/100/200 MHz) Doluluk ve Örtüşme (Union) Analizi
+* 💬 **Operatör Doğal Dil Soruları:**
+  * *"Düşman radarlarının sabit frekans dilimlerindeki spektrum doluluk ve kullanım yoğunluğunu tablo ve bar grafiği olarak analiz et."*
+  * *"Son 24 saatte düşman radarları spektrumun hangi bantlarını (MHz) ne oranda işgal etmiş?"*
+  * *"Dost ve düşman radarlarının frekans spektrumundaki çakışma ve kullanım yoğunluğu nedir?"*
+  * *"Radar frekans doluluk tablosunu 50 MHz dilimler halinde çıkar."*
+* 🛠️ **Çağrılan Tool:** `getRadarSpectrumOccupancy(String timeRange, String teshisKimlik)`
+* 📍 **Kaynak Kod Konumu:** [`RadarEmissionTools.java:L1465-L1510`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java#L1465-L1510)
+* ⚙️ **Koddaki Filtreleme ve Matematiksel Mantık:**
+  * Sabit dilimler (örn: 100-150 MHz, 150-200 MHz... 11950-12000 MHz) üzerinde radarların min-max frekans aralıklarının matematiksel birleşimi (`Interval Union`) hesaplanır.
+  * Mükerrer emisyonların aynı aralığı çift sayması engellenir; dilimin toplam MHz genişliği üzerinden net işgal yüzdesi (`Occupancy %`) ve emisyon sayısı bulunur.
+* 🎖️ **Askeri Doktrin ve Taktik Anlamı:**
+  Elektronik Destek (ED) ve Taarruz (ET) planlamasında "Düşmanın en çok yığıldığı kritik frekans kanalları hangileridir?" sorusunun yanıtıdır. Karıştırma kaynaklarının (Jammer) hangi bantlara tahsis edileceğine karar verilir.
+
+---
+
+### KATEGORİ 12: Kategorik Dağılım ve Taktik Pasta/Halka/Gül Grafiği Analizi
+
+#### 12.1. 11+ Kriter Üzerinden Taktik Pasta/Halka/Gül Grafiği
+* 💬 **Operatör Doğal Dil Soruları:**
+  * *"Radarların görev tiplerine (Arama, Takip, Atış Kontrol) göre dağılım pastasını çıkar."*
+  * *"Telsiz lisan dağılımını (Rusça, Arapça, Yunanca vb.) halka grafik olarak analiz et."*
+  * *"Düşman radarlarının polarizasyon (Yatay, Dikey, Dairesel) veya platform dağılımı nedir?"*
+  * *"Telsiz haberleşme şekillerinin oranlarını gül grafiğinde (Nightingale Rose) göster."*
+* 🛠️ **Çağrılan Tool:** `getTacticalDistribution(String source, String criterion, String timeRange, Integer limit)`
+* 📍 **Kaynak Kod Konumu:** [`RadarEmissionTools.java:L1425-L1445`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java#L1425-L1445)
+* ⚙️ **Koddaki Filtreleme ve Mantık:**
+  `source` (`RADAR` / `COMINT`) ve `criterion` (`TESHIS`, `GOREV`, `POLARIZASYON`, `MODULASYON`, `PLATFORM`, `HEDEF_YER`, `CAGRI_ADI`, `LISAN`, `HABERLESME_SEKLI`, `BANT`) parametrelerine göre veritabanında tek geçişli gruplama ve yüzde hesabı yapılır.
+* 🎖️ **Askeri Doktrin ve Taktik Anlamı:**
+  Kuvvet konuşlanması ve tehdit niteliğinin görsel brifing özetidir; sağ panelde otomatik olarak açılan interaktif pie-simple grafi�* ⚙️ Koddaki Filtreleme ve Puanlama:
+  RF İmzası (%45) + Zaman (%20) + Taktik/Coğrafya (%35) formülüyle 100 puan üzerinden benzerlik skoru hesaplar; Top-K sıralaması yapar.
+
+---
+
+### KATEGORİ 15: Haftanın Günlerine Göre LOB ve Kestirim Dağılımı (Örümcek Ağı / Radar Grafiği)
+
+#### 15.1. Günlük LOB ve Kestirim Dağılımı Örümcek Ağı Analizi
+* 💬 **Operatör Doğal Dil Soruları:**
+  * *"haftanın günlerine göre radar ya da muhabere kestirim/ LOB sayısını grafiğini ver"*
+  * *"haftanın günlerine göre LOB tespit sayısı örümcek ağı grafiği"*
+  * *"günlere göre radar ve telsiz yayın dağılımını radar grafiğinde göster"*
+  * *"haftalık LOB ve kestirim elipsi dağılımı"*
+  * *"pazartesiden pazara kadar gün bazında radar ve muhabere yayın yoğunlukları"*
+* 🛠️ **Çağrılan Tool:** `getWeekdayEmissionDistribution(String source, String recordType, String timeRange)`
+* 📍 **Kaynak Kod Konumu:** [`RadarEmissionTools.java`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java) & [`TacticalWeekdayRadarService.java`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/service/TacticalWeekdayRadarService.java)
+* ⚙️ **Koddaki Filtreleme ve Mantık:**
+  PostgreSQL üzerinde `EXTRACT(ISODOW FROM COALESCE(ilk_tespit_zamani, son_tespit_zamani))::int` fonksiyonuyla 1 (Pazartesi) ile 7 (Pazar) aralığındaki günler indekslenir. Tek geçişte koşullu toplama (`COUNT(*) FILTER (WHERE kayit_tipi = 'HAM_LOB')` ve `COUNT(*) FILTER (WHERE kayit_tipi = 'KESTIRIM_ELIPS')`) yapılarak hem radar hem de muhabere için 7 günlük dizi üretilir.
+* 🎖️ **Askeri Doktrin ve Taktik Anlamı:**
+  Düşmanın haftalık harekât ritmini (tempo), tatbikat günlerini, hafta içi/hafta sonu telsiz disiplinini ve hava savunma radarlarını hangi günlerde aktif hale getirdiğini 7 kollu örümcek ağı / radar grafiğinde periyodik olarak analiz eder.
+* 🖥️ **Arayüz (Frontend) Widget Entegrasyonu:**
+  Operatör bu soruyu sorduğunda Copilot yanıtıyla birlikte sağ analiz panelinde **`WEEKDAY_RADAR` (Örümcek Ağı Grafiği)** widget'ını otomatik olarak açar. Operatör menü çubuğundaki **`🕸️ Haftalık LOB Dağılımı`** butonundan da bağımsız olarak filtreleri (Tümü / Radar / Muhabere, Tümü / Sadece LOB / Sadece Kestirim, Zaman Filtreleri) değiştirerek grafiği etkileşimli inceleyebilir.
+
+---
+
 ## 3. HIZLI REFERANS MATRİSİ (TAM LİSTE)
 
 | # | Kategori | Tipik Operatör Sorusu | Tetiklenen Tool | Filtre / Doktrin Özeti | Kod Konumu |
@@ -399,7 +455,7 @@ Bu rehber, **Spring AI (Gemini 3.5 Flash-Lite)** destekli Taktik C2 Copilot sist
 | 4 | **Telsiz Makro Durum** | *"Telsiz trafiği özetini çıkar"* | `getComintMacroStats` | Kripto, Lisan, HF/VHF, Hiyerarşi | [`ComintEmissionTools.java:L148`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/ComintEmissionTools.java#L148) |
 | 5 | **Parametrik Radar** | *"X-Bandında dar PW'li radarları bul"* | `queryEmissions` | Frekans, PRI, PW, ATP zarf taraması | [`RadarEmissionTools.java:L359`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java#L359) |
 | 6 | **Parametrik Telsiz** | *"VHF bandında Rusça ses yayınları"* | `queryComintEmissions` | Lisan, Protokol, Modülasyon, MTI | [`ComintEmissionTools.java:L525`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/ComintEmissionTools.java#L525) |
-| 7 | **Link-Pair Analizi** | *"Kim kiminle konuştu? Temas adetleri"* | `getCallsignPairInteractionStats`| `GROUP BY cagri, karsi_cagri` | [`ComintEmissionTools.java:L644`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/ComintEmissionTools.java#L644) |
+| 7 | **Link-Pair Analizi** | *"Kim kiminle konuştu? Temas adetleri"* | `getCallsignPairInteractionStats`| `GROUP BY cagri, karsi_cagri` (Isı Haritası) | [`ComintEmissionTools.java:L644`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/ComintEmissionTools.java#L644) |
 | 8 | **En Aktif Çağrı Adı** | *"En çok konuşan telsiz istasyonları"* | `getMostActiveCallsigns` | `GROUP BY cagri_adi ORDER BY COUNT` | [`ComintEmissionTools.java:L716`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/ComintEmissionTools.java#L716) |
 | 9 | **Çağrı Adı Ağ Analizi**| *"KARTAL-1'in tüm temas kanalları"* | `queryComintCallsignNetwork` | Tek istasyonun çift yönlü link haritası | [`ComintEmissionTools.java:L753`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/ComintEmissionTools.java#L753) |
 | 10 | **Trafik Trendi / Surge**| *"Telsiz trafiğinde ani artış var mı?"*| `getComintTrafficTrend` | Saatlik histogram + $2.5\sigma$ sapma | [`ComintEmissionTools.java:L822`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/ComintEmissionTools.java#L822) |
@@ -414,3 +470,9 @@ Bu rehber, **Spring AI (Gemini 3.5 Flash-Lite)** destekli Taktik C2 Copilot sist
 | 19 | **EOB Hiyerarşisi** | *"Elektronik Muharebe Düzeni çıkar"* | `getElectronicOrderOfBattleSummary` | Görev + Platform + HSS hiyerarşisi | [`RadarEmissionTools.java:L1183`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java#L1183) |
 | 20 | **Tekil Radar Kartı** | *"RAD-0005 radarının tüm detayları"* | `getEmissionTechnicalDetails` | PK üzerinden 37 parametre ve listeler | [`RadarEmissionTools.java:L508`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java#L508) |
 | 21 | **Tekil Telsiz Kartı** | *"COM-0018 telsizinin tüm detayları"* | `getComintEmissionDetails` | PK üzerinden 30 parametre ve detaylar | [`ComintEmissionTools.java:L897`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/ComintEmissionTools.java#L897) |
+| 22 | **Spektrum Doluluk** | *"Düşman radarlarının frekans doluluk oranı"* | `getRadarSpectrumOccupancy` | 50/100/200 MHz dilimlerde örtüşme (Union) | [`RadarEmissionTools.java:L1467`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java#L1467) |
+| 23 | **Taktik Dağılım** | *"Radar görev tiplerinin pasta dağılımı"* | `getTacticalDistribution` | 11+ kriterde pasta, halka, gül grafiği | [`RadarEmissionTools.java:L1430`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java#L1430) |
+| 24 | **Dalga Formu Çizelgesi**| *"SP048 radarının dalga formu değişimi"* | `getWaveformTimeline` | Frekans, PRI, PW ve Genlik zaman serisi | [`RadarEmissionTools.java:L1449`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java#L1449) |
+| 25 | **1-to-1 Karşılaştırma** | *"RAD-0012 ile RAD-0045 radarını karşılaştır"*| `compareRadarEmissions` | 1D IoU ile Zaman, RF, PRI, PW analizi | [`RadarEmissionTools.java:L629`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java#L629) |
+| 26 | **1-to-N Benzerlik** | *"Bu radara sahada en çok benzeyen ilk 5 hedef"*| `findSimilarRadarEmissions` | 100 puanlık çok kriterli matris & Top-K | [`RadarEmissionTools.java:L640`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java#L640) |
+| 27 | **Haftalık LOB & Kestirim Dağılımı** | *"Haftanın günlerine göre radar ya da muhabere LOB sayısını grafiğini ver"* | `getWeekdayEmissionDistribution` | 7 kollu Apache ECharts Örümcek Ağı / Radar grafiği; tek geçişli ISODOW gruplaması | [`RadarEmissionTools.java`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java) |

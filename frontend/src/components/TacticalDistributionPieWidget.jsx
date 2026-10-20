@@ -35,7 +35,7 @@ export default function TacticalDistributionPieWidget({
   const [source, setSource] = useState(initialSource); // 'RADAR' | 'COMINT'
   const [criterion, setCriterion] = useState(initialCriterion);
   const [timeRange, setTimeRange] = useState('ALL'); // 'ALL' | 'SON_24_SAAT' | 'SON_6_SAAT' | 'SON_1_SAAT'
-  const [chartMode, setChartMode] = useState('DONUT'); // 'DONUT' | 'ROSE'
+  const [chartMode, setChartMode] = useState('PIE'); // 'PIE' | 'DONUT' | 'ROSE'
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -128,6 +128,8 @@ export default function TacticalDistributionPieWidget({
     }));
 
     const isRose = chartMode === 'ROSE';
+    const isDonut = chartMode === 'DONUT';
+    const isPie = chartMode === 'PIE';
 
     return {
       backgroundColor: 'transparent',
@@ -159,7 +161,7 @@ export default function TacticalDistributionPieWidget({
       },
       legend: {
         type: 'scroll',
-        orient: isModal ? 'horizontal' : 'horizontal',
+        orient: 'horizontal',
         bottom: 0,
         textStyle: { color: '#cbd5e1', fontSize: 11 },
         pageTextStyle: { color: '#94a3b8' },
@@ -171,25 +173,36 @@ export default function TacticalDistributionPieWidget({
         {
           name: dto.criterionLabel,
           type: 'pie',
-          radius: isRose ? ['25%', '65%'] : ['45%', '70%'],
-          center: ['50%', '45%'],
+          radius: isRose
+            ? (isModal ? ['20%', '70%'] : ['20%', '62%'])
+            : (isDonut ? (isModal ? ['35%', '65%'] : ['35%', '60%']) : (isModal ? '60%' : '52%')),
+          center: ['50%', '46%'],
           roseType: isRose ? 'radius' : false,
           avoidLabelOverlap: true,
           itemStyle: {
-            borderRadius: 6,
+            borderRadius: isDonut ? 6 : 4,
             borderColor: '#0f172a',
             borderWidth: 2
           },
           label: {
-            show: isModal,
+            show: true,
             position: 'outside',
-            formatter: '{b}: %{d}',
+            formatter: (params) => {
+              const count = params.value ? Number(params.value).toLocaleString('tr-TR') : 0;
+              const pct = params.percent != null ? params.percent : (params.data?.percentage || 0);
+              return `${params.name}\n${count} (%${pct})`;
+            },
             color: '#cbd5e1',
-            fontSize: 11
+            fontSize: isModal ? 12 : 10,
+            fontWeight: 500,
+            lineHeight: 14
           },
           labelLine: {
-            show: isModal,
-            lineStyle: { color: '#475569' }
+            show: true,
+            length: isModal ? 15 : 10,
+            length2: isModal ? 12 : 8,
+            smooth: true,
+            lineStyle: { color: '#475569', width: 1 }
           },
           emphasis: {
             label: {
@@ -208,7 +221,7 @@ export default function TacticalDistributionPieWidget({
         }
       ],
       // Ortada Toplam Sayaç Grafiği (Yalnızca Donut modunda)
-      graphic: !isRose ? [
+      graphic: isDonut ? [
         {
           type: 'text',
           left: 'center',
@@ -245,7 +258,8 @@ export default function TacticalDistributionPieWidget({
     }
 
     const option = getChartOption(data, false);
-    chartInstance.current.setOption(option, true);
+    chartInstance.current.clear();
+    chartInstance.current.setOption(option, { notMerge: true, replaceMerge: ['series', 'graphic', 'legend'] });
     setTimeout(() => {
       chartInstance.current?.resize();
     }, 50);
@@ -255,18 +269,36 @@ export default function TacticalDistributionPieWidget({
     return () => window.removeEventListener('resize', handleResize);
   }, [data, chartMode]);
 
-  // Modal Chart Render
-  useEffect(() => {
-    if (!modalVisible || !modalChartRef.current || !data) return;
-
-    setTimeout(() => {
-      if (!modalChartInstance.current) {
-        modalChartInstance.current = echarts.init(modalChartRef.current, 'dark');
+  // Modal Chart Render Fonksiyonu
+  const renderModalChart = () => {
+    if (!modalChartRef.current || !data) return;
+    try {
+      let inst = echarts.getInstanceByDom(modalChartRef.current);
+      if (!inst) {
+        inst = echarts.init(modalChartRef.current, 'dark');
       }
+      modalChartInstance.current = inst;
       const option = getChartOption(data, true);
-      modalChartInstance.current.setOption(option, true);
-      modalChartInstance.current.resize();
-    }, 150);
+      inst.clear();
+      inst.setOption(option, { notMerge: true, replaceMerge: ['series', 'graphic', 'legend'] });
+      inst.resize();
+    } catch (err) {
+      console.error('Modal dağılım grafiği render hatası:', err);
+    }
+  };
+
+  // Modal Görünürlüğü ve Veri Değişiminde Tetikleme
+  useEffect(() => {
+    if (!modalVisible || !data) return;
+    renderModalChart();
+    const t1 = setTimeout(renderModalChart, 50);
+    const t2 = setTimeout(renderModalChart, 200);
+    const t3 = setTimeout(renderModalChart, 400);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
   }, [modalVisible, data, chartMode]);
 
   return (
@@ -335,19 +367,18 @@ export default function TacticalDistributionPieWidget({
             ]}
           />
 
-          {/* Mod Değiştirici: Donut vs Gül */}
-          <Tooltip title={chartMode === 'DONUT' ? 'Gül (Rose) Görünümüne Geç' : 'Klasik Donut Görünümüne Geç'}>
-            <Button
-              size="small"
-              icon={<DotChartOutlined />}
-              onClick={() => setChartMode(chartMode === 'DONUT' ? 'ROSE' : 'DONUT')}
-              style={{
-                backgroundColor: '#1e293b',
-                borderColor: chartMode === 'ROSE' ? '#38bdf8' : '#334155',
-                color: chartMode === 'ROSE' ? '#38bdf8' : '#cbd5e1'
-              }}
-            />
-          </Tooltip>
+          {/* Mod Değiştirici: Pasta vs Halka vs Gül */}
+          <Segmented
+            size="small"
+            value={chartMode}
+            onChange={setChartMode}
+            options={[
+              { label: '🥧 Pasta', value: 'PIE' },
+              { label: '🍩 Halka', value: 'DONUT' },
+              { label: '🌹 Gül', value: 'ROSE' }
+            ]}
+            style={{ backgroundColor: '#1e293b', border: '1px solid #334155' }}
+          />
 
           {/* Yenile */}
           <Tooltip title="Verileri Yenile">
@@ -443,6 +474,13 @@ export default function TacticalDistributionPieWidget({
           </Space>
         }
         open={modalVisible}
+        afterOpenChange={(open) => {
+          if (open) {
+            renderModalChart();
+            setTimeout(renderModalChart, 50);
+            setTimeout(renderModalChart, 250);
+          }
+        }}
         onCancel={() => setModalVisible(false)}
         width="80vw"
         footer={[
@@ -462,6 +500,7 @@ export default function TacticalDistributionPieWidget({
               value={chartMode}
               onChange={setChartMode}
               options={[
+                { label: '🥧 Pasta (Klasik)', value: 'PIE' },
                 { label: '🍩 Donut Modu', value: 'DONUT' },
                 { label: '🌹 Gül (Rose) Modu', value: 'ROSE' }
               ]}
@@ -472,7 +511,16 @@ export default function TacticalDistributionPieWidget({
             💡 Dilimlerin üzerine gelerek net adet ve yüzde paylarını inceleyebilirsiniz.
           </Text>
         </div>
-        <div ref={modalChartRef} style={{ width: '100%', height: '65vh' }} />
+        <div
+          ref={(el) => {
+            modalChartRef.current = el;
+            if (el && modalVisible && data) {
+              renderModalChart();
+              setTimeout(renderModalChart, 60);
+            }
+          }}
+          style={{ width: '100%', height: '65vh', minHeight: 450 }}
+        />
       </Modal>
     </Card>
   );

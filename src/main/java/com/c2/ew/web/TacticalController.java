@@ -11,10 +11,12 @@ import com.c2.ew.agent.dto.TacticalQueryRequest;
 import com.c2.ew.agent.dto.TacticalResponseDto;
 import com.c2.ew.agent.dto.TacticalWaveformTimelineDto;
 import com.c2.ew.agent.dto.RadarSpectrumOccupancyDto;
+import com.c2.ew.agent.dto.WeekdayRadarDistributionDto;
 import com.c2.ew.agent.service.RadarSpectrumOccupancyService;
 import com.c2.ew.agent.service.TacticalAgentService;
 import com.c2.ew.agent.service.TacticalDistributionService;
 import com.c2.ew.agent.service.TacticalWaveformTimelineService;
+import com.c2.ew.agent.service.TacticalWeekdayRadarService;
 import com.c2.ew.agent.tools.ComintEmissionTools;
 import com.c2.ew.agent.tools.RadarEmissionTools;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +36,7 @@ public class TacticalController {
     private final TacticalDistributionService distributionService;
     private final TacticalWaveformTimelineService timelineService;
     private final RadarSpectrumOccupancyService spectrumOccupancyService;
+    private final TacticalWeekdayRadarService weekdayRadarService;
 
     public TacticalController(
         TacticalAgentService agentService,
@@ -41,7 +44,8 @@ public class TacticalController {
         ComintEmissionTools comintTools,
         TacticalDistributionService distributionService,
         TacticalWaveformTimelineService timelineService,
-        RadarSpectrumOccupancyService spectrumOccupancyService
+        RadarSpectrumOccupancyService spectrumOccupancyService,
+        TacticalWeekdayRadarService weekdayRadarService
     ) {
         this.agentService = agentService;
         this.emissionTools = emissionTools;
@@ -49,6 +53,7 @@ public class TacticalController {
         this.distributionService = distributionService;
         this.timelineService = timelineService;
         this.spectrumOccupancyService = spectrumOccupancyService;
+        this.weekdayRadarService = weekdayRadarService;
     }
 
     /**
@@ -139,6 +144,18 @@ public class TacticalController {
         @RequestParam(required = false, defaultValue = "true") Boolean onlyActive
     ) {
         return ResponseEntity.ok(spectrumOccupancyService.calculateOccupancy(timeRange, teshisKimlik, binStepMhz, onlyActive));
+    }
+
+    /**
+     * Haftanın Günlerine Göre LOB ve Kestirim Tespit Dağılımı (ECharts Örümcek Ağı / Spider Web Grafiği)
+     */
+    @GetMapping({"/analytics/weekday-radar", "/weekday-radar"})
+    public ResponseEntity<WeekdayRadarDistributionDto> getWeekdayRadarDistribution(
+        @RequestParam(defaultValue = "TUMU") String source,
+        @RequestParam(defaultValue = "TUMU") String recordType,
+        @RequestParam(defaultValue = "ALL") String timeRange
+    ) {
+        return ResponseEntity.ok(weekdayRadarService.calculateWeekdayDistribution(source, recordType, timeRange));
     }
 
     /**

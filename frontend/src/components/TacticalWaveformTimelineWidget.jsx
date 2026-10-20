@@ -416,18 +416,36 @@ export default function TacticalWaveformTimelineWidget({
     }
   }, [data, metric]);
 
-  // Modal Chart Rendering
-  useEffect(() => {
-    if (modalVisible && modalChartRef.current && data && data.points) {
-      setTimeout(() => {
-        if (!modalChartInstance.current) {
-          modalChartInstance.current = echarts.init(modalChartRef.current, 'dark');
-        }
-        const option = getChartOption(data, metric);
-        modalChartInstance.current.setOption(option, true);
-        modalChartInstance.current.resize();
-      }, 100);
+  // Modal Chart Render Fonksiyonu
+  const renderModalChart = () => {
+    if (!modalChartRef.current || !data || !data.points) return;
+    try {
+      let inst = echarts.getInstanceByDom(modalChartRef.current);
+      if (!inst) {
+        inst = echarts.init(modalChartRef.current, 'dark');
+      }
+      modalChartInstance.current = inst;
+      const option = getChartOption(data, metric);
+      inst.clear();
+      inst.setOption(option, { notMerge: true, replaceMerge: ['series', 'xAxis', 'yAxis', 'grid'] });
+      inst.resize();
+    } catch (err) {
+      console.error('Modal dalga formu grafik render hatası:', err);
     }
+  };
+
+  // Modal Görünürlüğü ve Metrik Değişiminde Tetikleme
+  useEffect(() => {
+    if (!modalVisible || !data || !data.points) return;
+    renderModalChart();
+    const t1 = setTimeout(renderModalChart, 50);
+    const t2 = setTimeout(renderModalChart, 200);
+    const t3 = setTimeout(renderModalChart, 400);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
   }, [modalVisible, data, metric]);
 
   // Window Resize
@@ -630,6 +648,13 @@ export default function TacticalWaveformTimelineWidget({
           </span>
         }
         open={modalVisible}
+        afterOpenChange={(open) => {
+          if (open) {
+            renderModalChart();
+            setTimeout(renderModalChart, 50);
+            setTimeout(renderModalChart, 250);
+          }
+        }}
         onCancel={() => setModalVisible(false)}
         footer={null}
         width={1100}
@@ -649,7 +674,16 @@ export default function TacticalWaveformTimelineWidget({
             {source === 'RADAR' && <Radio.Button value="PW">📏 PW (µs)</Radio.Button>}
           </Radio.Group>
         </div>
-        <div ref={modalChartRef} style={{ width: '100%', height: 500 }} />
+        <div
+          ref={(el) => {
+            modalChartRef.current = el;
+            if (el && modalVisible && data && data.points) {
+              renderModalChart();
+              setTimeout(renderModalChart, 60);
+            }
+          }}
+          style={{ width: '100%', height: 500 }}
+        />
       </Modal>
     </Card>
   );

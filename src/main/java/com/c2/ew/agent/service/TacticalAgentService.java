@@ -155,6 +155,13 @@ public class TacticalAgentService {
               * timeRange: Soruya göre 'SON_1_SAAT', 'SON_6_SAAT', 'SON_24_SAAT', 'SON_7_GUN' veya 'ALL' (varsayılan 'SON_24_SAAT').
               * limit: İstenen benzer kayıt sayısı (varsayılan 5).
               * Araç tarafından üretilen 100 puanlık çok kriterli benzerlik tablosunu, zaman kesişimi ve yakınlığı puanlarını ve en yüksek adayın puan kartını yanıtında net olarak sun.
+        13. HAFTANIN GÜNLERİNE GÖRE LOB VE KESTİRİM DAĞILIMI (ÖRÜMCEK AĞI / RADAR GRAFİĞİ):
+            - Operatör haftanın günlerine göre radar ya da muhabere kestirim/LOB sayısını, haftalık LOB dağılımını, örümcek ağı (spider web / radar chart) grafiğini veya günlere göre tespit sayılarını sorduğunda:
+              * KESİNLİKLE 'getWeekdayEmissionDistribution(source, recordType, timeRange)' aracını çağır!
+              * source: Soruya göre 'TUMU', 'RADAR' veya 'COMINT' (varsayılan 'TUMU').
+              * recordType: Soruya göre 'TUMU', 'SADECE_LOB' veya 'SADECE_KESTIRIM' (varsayılan 'TUMU').
+              * timeRange: Soruya göre 'ALL', 'SON_7_GUN', 'SON_30_GUN' veya 'SON_24_SAAT' (varsayılan 'ALL').
+              * Yanıtında günlere göre (Pazartesi .. Pazar) sayıları gösteren net bir Markdown tablosu sun. Yanıtın sonuna "Eşzamanlı olarak sağ panelde interaktif Haftalık LOB/Kestirim Örümcek Ağı Grafiği açılmıştır." notunu ekle.
         """;
 
     private final ChatClient chatClient;

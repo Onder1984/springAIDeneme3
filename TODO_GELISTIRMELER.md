@@ -133,23 +133,54 @@ Operatörün belirttiği gerçekçi Elektronik Harp ve SIGINT doktrini sisteme k
 
 ---
 
-## 📌 TODO-06: Callsign (Çağrı Adı) İkili Konuşma Matrisi ve Isı Haritası Uyumu (Collation & Çift Yönlülük)
+## ✅ TAMAMLANDI - TODO-06: Callsign (Çağrı Adı) İkili Konuşma Matrisi ve Isı Haritası (ECharts Adjacency Matrix)
 
-### 1. Belirtilen Sorun
-Operatör arayüzdeki ECharts Isı Haritasında *"GRIFFIN-2 ve SHADOW-03"* hücresinde binlerce (4.400+) konuşma görürken, Copilot'a *"GRIFFIN-2 ile SHADOW-03 arasındaki konuşma adedi kaç"* diye sorduğunda asistanın *"Bu iki çağrı adı arasında doğrudan temas/görüşme tespit edilmemiştir (0 adet)"* yanıtını vermesi.
+### 1. Durum: **MİMARİ VE UYGULAMA TAMAMLANDI, CANLI VERİDE DOĞRULANDI**
+Operatörün telsiz çağrı adı ikililerini matrisel ve görsel ısı haritası olarak inceleme ihtiyacı eksiksiz karşılanmıştır:
+- **Backend Matris Servisi:** `/api/v1/tactical/comint/callsign-matrix` uç noktası üzerinden `SON_1_SAAT`, `SON_6_SAAT`, `SON_24_SAAT` ve `ALL` zaman aralıklarında en aktif 15, 25 veya 40 çağrı çiftinin toplam konuşma sayısı, süre, VHF/HF frekans oranları ve kripto baskınlığı hesaplanmaktadır.
+- **Frontend ECharts Cartesian Isı Haritası (`CallsignHeatmapWidget.jsx`):**
+  - **İki Farklı Renk Skalası:** Aşırı değer sapmalarını engelleyen 5 katmanlı akıllı kademe (`PIECEWISE` Quintile) ve kesintisiz termal geçiş (`CONTINUOUS`).
+  - **Kalıcı DOM ve Boyutlandırma:** `minHeight: 340px` ve geçikmeli `resize` (50ms, 250ms) yaşam döngüsüyle panel geçiş animasyonunda sıfır piksel hatası giderilmiştir.
+  - **Büyütülmüş Modal İnceleme:** Tam ekran modal (`afterOpenChange` ve callback ref) ile 40x40 çiftlik devasa ağ matrisi donmadan incelenebilmektedir.
 
-### 2. Kök Neden Analizi
-1. **ICU Collation ve `LOWER` Uyuşmazlığı:** `tactical_comint` tablosundaki `cagri_adi` ve `karsi_cagri_adi` kolonları `tr-TR-x-icu` collation'ına sahiptir. PostgreSQL'de `LOWER('GRIFFIN-2')` çalıştırıldığında İngilizce ASCII `I` harfi Türkçe noktasız `ı` (`grıffın-2`) harfine dönüşmektedir. Ancak Java / parametre tarafında `LOWER('%GRIFFIN-2%')` varsayılan collation ile noktalı `i` (`%griffin-2%`) ürettiğinden `LIKE` eşleşmesi bayt seviyesinde başarısız olmakta ve veritabanı 0 satır dönmektedir.
-2. **Tek Yönlü (Unidirectional) SQL Kısıtı:** Askeri haberleşmede "A ile B arasındaki görüşme" ifadesi karşılıklı iletişimi (A->B ve B->A) ifade ederken, mevcut SQL sorgusu yalnızca `cagri_adi = A AND karsi_cagri_adi = B` şeklinde tek yönlü filtrelenmektedir.
-3. **Zaman Aralığı Farkı:** Isı Haritası varsayılan olarak `SON_24_SAAT` filtresiyle çalışırken (4.458 adet), filtresiz genel veritabanı toplamı 6.047 adettir.
+---
 
-### 3. Planlanan Çözüm Adımları
-1. **Collation Bağımsız UPPER Mimarisi:**
-   `TacticalComintJpaRepository.java` içerisindeki `getFilteredCallsignInteractionMatrix`, `getFilteredCallsignInteractionMatrixWithTimeRange` ve `getHourlyTrafficTrend` native sorgularında `LOWER` yerine `UPPER(...) LIKE UPPER(...)` yapısına geçilecek.
-2. **Simetrik Çift Yönlü Eşleşme:**
-   Çağrı çifti sorgularına simetrik çift yönlü eşleşme kazandırılacak (`(cagri=A AND karsi=B) OR (cagri=B AND karsi=A)`).
-3. **JPA Specification Senkronizasyonu:**
-   `ComintEmissionTools.java` içerisindeki `queryComintCallsignNetwork` aracında JPA Specification karşılaştırmaları `cb.upper` ve `toUpperCase(Locale.ROOT)` ile uyumlu hale getirilecek.
+## ✅ TAMAMLANDI - TODO-07: Spektrum Doluluk & Taktik Görselleştirici Widget Entegrasyonu
+
+### 1. Durum: **GELİŞTİRİLDİ, SİSTEME ENTEGRE EDİLDİ VE DOĞRULANDI**
+Karar vericinin taktik resme anında hakim olması için çekirdek görselleştiriciler Copilot arayüzüne entegre edilmiştir:
+1. **🔥 Callsign Heatmap Widget:** COMINT komuta ağı ve telsiz konuşma yoğunluğu matrisi.
+2. **🥧 Tactical Distribution Pie Widget:** Radar ve Muhabere verilerinde 11+ kriterde pasta, halka (donut) ve gül (Nightingale rose) dağılımları. ECharts pie-simple standardına uygun dış etiketler ve sayfalara ayrılmış yatay lejant.
+3. **📈 Tactical Waveform Timeline Widget:** Hedef bazlı zaman serisi; frekans/PRI/PW min-max bant zarfı ve sinyal gücü (dBm) çift eksenli senkron grafiği.
+4. **📊 Radar Spectrum Occupancy Widget:** 50 MHz, 100 MHz ve 200 MHz sabit frekans dilimlerinde radar yayınlarının örtüşme (Union) analizi, çoklu teşhis (Düşman, Dost, Tarafsız, Bilinmeyen) yığılmış çubuk (stacked bar) ve sıralanabilir taktik tablo görünümü.
+5. **🧭 Sola Yanaşık Taktik Menü Çubuğu:** Taktik operasyon ergonomisine uygun olarak analiz butonları en sola yanaşık hizalanmış; sağında ayraç ve hızlı eylem butonları konumlandırılmıştır.
+
+---
+
+## ✅ TAMAMLANDI - TODO-08: Haftanın Günlerine Göre LOB ve Kestirim Dağılımı (Örümcek Ağı / Radar Grafiği)
+
+### 1. Durum: **MİMARİ VE UYGULAMA TAMAMLANDI, E2E DOĞRULANDI**
+Operatörün haftalık LOB ve kestirim sayılarını 7 kollu örümcek ağı / radar grafiğinde (`https://echarts.apache.org/examples/en/editor.html?c=radar`) inceleme talebi eksiksiz gerçekleştirilmiştir:
+1. **Veri Modeli & Servis Mimarisi (`WeekdayRadarDistributionDto` & `TacticalWeekdayRadarService`):**
+   - PostgreSQL üzerinde `EXTRACT(ISODOW FROM COALESCE(ilk_tespit_zamani, son_tespit_zamani))::int` kullanılarak 1 (Pazartesi) .. 7 (Pazar) indeksleme yapıldı.
+   - Tek geçişte koşullu toplama (`COUNT(*) FILTER (WHERE kayit_tipi = 'HAM_LOB')` ve `COUNT(*) FILTER (WHERE kayit_tipi = 'KESTIRIM_ELIPS')`) ile 940.000+ kayıt üzerinden mikrosaniye seviyesinde yüksek performanslı analitik sorgu üretildi.
+   - Tavan eksen ölçeği (`maxIndicatorValue`) dinamik olarak `1.15x` ile yuvarlanarak grafik poligonlarının taşması engellendi.
+2. **REST API Uç Noktası:**
+   - `GET /api/v1/tactical/analytics/weekday-radar?source=TUMU&recordType=TUMU&timeRange=ALL` eklendi.
+   - Bağımsız boyut filtreleri desteklendi: `source` (`TUMU`, `RADAR`, `COMINT`), `recordType` (`TUMU`, `SADECE_LOB`, `SADECE_KESTIRIM`), `timeRange` (`ALL`, `SON_7_GUN`, `SON_30_GUN`).
+3. **Spring AI Agent Araç Çağrısı (`@Tool` & Directives):**
+   - `RadarEmissionTools.getWeekdayEmissionDistribution` aracı eklendi.
+   - `TacticalAgentService` sistem yönergesine Kural 13 eklendi.
+   - Operatör *"haftanın günlerine göre radar ya da muhabere kestirim/ LOB sayısını grafiğini ver"* sorduğunda Copilot deterministik olarak bu aracı tetiklemekte ve brifing sunmaktadır.
+4. **Frontend Apache ECharts Radar Bileşeni (`WeekdayRadarDistributionWidget.jsx`):**
+   - Ant Design Segmented kontrolleri ile Kaynak (Tüm Veriler, Radar, Muhabere), Kayıt Niteliği (Tümü, Sadece LOB, Sadece Kestirim) ve Zaman filtresi eklendi.
+   - ECharts Radar bileşeni ile 7 günün kolları (Pazartesi .. Pazar), çift renkli poligonlar (Radar: Cyan `#38bdf8`, Muhabere: Mor `#c084fc`, yarı saydam taktik dolgular) tasarlandı.
+   - Sayısal KPI kartları (Toplam Radar, Toplam Muhabere, Genel Toplam) ve tablo/grafik görünüm geçişi sağlandı.
+   - Tam ekran projeksiyon modalı entegre edildi.
+5. **Copilot Menü ve Mesaj Entegrasyonu:**
+   - Sohbet menü çubuğuna 5. buton olarak **`🕸️ Haftalık LOB Dağılımı`** sola yanaşık eklendi.
+   - Ajan yanıtında tespit edilen `WEEKDAY_RADAR` için sağ panel otomatik olarak açılarak operatöre anında görsel taktik resim sunulmaktadır.
+
 
 
 

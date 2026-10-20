@@ -19,6 +19,7 @@ import CallsignHeatmapWidget from './CallsignHeatmapWidget';
 import TacticalDistributionPieWidget from './TacticalDistributionPieWidget';
 import TacticalWaveformTimelineWidget from './TacticalWaveformTimelineWidget';
 import RadarSpectrumOccupancyWidget from './RadarSpectrumOccupancyWidget';
+import WeekdayRadarDistributionWidget from './WeekdayRadarDistributionWidget';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -42,10 +43,11 @@ Aşağıdaki hızlı komutları kullanabilir veya doğal dilde arama yapabilirsi
   ]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [activeWidget, setActiveWidget] = useState(null); // null | 'CALLSIGN_HEATMAP' | 'PIE_DISTRIBUTION' | 'WAVEFORM_TIMELINE'
+  const [activeWidget, setActiveWidget] = useState(null); // null | 'CALLSIGN_HEATMAP' | 'PIE_DISTRIBUTION' | 'WAVEFORM_TIMELINE' | 'SPECTRUM_OCCUPANCY' | 'WEEKDAY_RADAR'
   const [distributionConfig, setDistributionConfig] = useState({ source: 'RADAR', criterion: 'TESHIS' });
   const [occupancyConfig, setOccupancyConfig] = useState({ timeRange: 'SON_24_SAAT', identities: ['DUSMAN'] });
   const [timelineConfig, setTimelineConfig] = useState({ source: 'RADAR', targetKey: 'SP048' });
+  const [weekdayRadarConfig, setWeekdayRadarConfig] = useState({ source: 'TUMU', recordType: 'TUMU', timeRange: 'ALL' });
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -194,20 +196,58 @@ Aşağıdaki hızlı komutları kullanabilir veya doğal dilde arama yapabilirsi
       return { type: 'PIE_DISTRIBUTION', source: src, criterion: crit };
     }
 
+    // 4. Haftanın Günlerine Göre LOB ve Kestirim Tespit Dağılımı (Örümcek Ağı / Spider Web) Tespiti
+    const isWeekdayRadarPrompt =
+      p.includes('haftanın günleri') ||
+      p.includes('haftanin gunleri') ||
+      p.includes('günlere göre') ||
+      p.includes('gunlere gore') ||
+      p.includes('örümcek ağı') ||
+      p.includes('orumcek agi') ||
+      p.includes('örümcek agi') ||
+      p.includes('spider web') ||
+      p.includes('spider chart') ||
+      p.includes('haftalık lob') ||
+      p.includes('haftalik lob') ||
+      p.includes('haftalık kestirim') ||
+      p.includes('haftalik kestirim') ||
+      (p.includes('hafta') && (p.includes('lob') || p.includes('kestirim') || p.includes('tespit')) && (p.includes('grafik') || p.includes('sayı') || p.includes('sayi')));
+
+    const weekdayToolLog = executionLogs.find((log) => log.includes('getWeekdayEmissionDistribution'));
+
+    if (isWeekdayRadarPrompt || weekdayToolLog) {
+      let src = 'TUMU';
+      let rec = 'TUMU';
+      let time = 'ALL';
+
+      if (weekdayToolLog) {
+        const srcMatch = weekdayToolLog.match(/source=([A-Za-z]+)/);
+        const recMatch = weekdayToolLog.match(/recordType=([A-Za-z0-9_]+)/);
+        const timeMatch = weekdayToolLog.match(/timeRange=([A-Za-z0-9_]+)/);
+        if (srcMatch) src = srcMatch[1].toUpperCase();
+        if (recMatch) rec = recMatch[1].toUpperCase();
+        if (timeMatch) time = timeMatch[1].toUpperCase();
+      } else {
+        if (p.includes('radar') && !p.includes('muhabere') && !p.includes('comint')) src = 'RADAR';
+        else if ((p.includes('muhabere') || p.includes('comint') || p.includes('telsiz')) && !p.includes('radar')) src = 'COMINT';
+        else src = 'TUMU';
+
+        if (p.includes('sadece lob') || (p.includes('lob') && !p.includes('kestirim'))) rec = 'SADECE_LOB';
+        else if (p.includes('sadece kestirim') || (p.includes('kestirim') && !p.includes('lob'))) rec = 'SADECE_KESTIRIM';
+        else rec = 'TUMU';
+
+        if (p.includes('7 gün') || p.includes('7 gun') || p.includes('bir hafta') || p.includes('son hafta')) time = 'SON_7_GUN';
+        else if (p.includes('30 gün') || p.includes('30 gun') || p.includes('ay')) time = 'SON_30_GUN';
+      }
+
+      return { type: 'WEEKDAY_RADAR', source: src, recordType: rec, timeRange: time };
+    }
+
     return null;
   };
 
   const quickPrompts = [
-    { label: '📊 Düşman Frekans Yoğunluğu (Bar Grafiği)', prompt: 'Düşman radar yayınlarının sabit frekans aralıklarındaki kullanım yoğunluğu ve doluluk oranlarını tablo ve bar grafiği olarak analiz et.' },
-    { label: '📈 SP048 Radar Dalga Formu Değişimi', prompt: 'SP048 radarının zaman içindeki frekans, PRI ve mod değişimlerini dalga formu zaman çizelgesinde analiz et.' },
-    { label: '📈 VOLGA-01 Muhabere Frekans Değişimi', prompt: 'VOLGA-01 telsiz ağının zaman içindeki frekans ve sinyal gücü değişimini dalga formu çizelgesinde analiz et.' },
-    { label: '🔥 Çağrı Adı İletişim Isı Haritası', prompt: 'Hangi çağrı adı kiminle ne kadar konuşmuş analiz et, en aktif telsiz çiftlerini ve toplam konuşma sürelerini çıkar.' },
-    { label: '🥧 Radar Polarizasyon Dağılımı', prompt: 'Sahadaki radar yayınlarının polarizasyon tiplerine göre dağılımını analiz et ve pasta grafiğinde göster.' },
-    { label: '🗣️ Telsiz Lisan Dağılımı', prompt: 'Sahadaki muhabere yayınlarının lisan dağılımını ve yabancı dil konuşma oranlarını pasta grafiği ile analiz et.' },
-    { label: '📻 Haberleşme Şekli Dağılımı', prompt: 'Muhabere yayınlarının haberleşme şekline (SES, KRIPTO, VERI, DARBE vb.) göre pasta dağılımını çıkar.' },
-    { label: '🎯 Radar Görev Dağılımı', prompt: 'Sahadaki radarların operasyonel görevlerine (Erken İhbar, Atış Kontrol, Takip vb.) göre dağılımını göster.' },
-    { label: '📡 Genel Taktik Durumu Özetle', prompt: 'Sahadaki genel taktik durumu, düşman radarlarını ve telsiz muhabere resmini özetle.' },
-    { label: '🎯 Düşman Radarları & HSS', prompt: 'Düşman hava savunma radarları ve atış kontrol mevzilerini listele.' }
+    { label: '📡 Genel Taktik Durumu Özetle', prompt: 'Sahadaki genel taktik durumu, düşman radarlarını ve telsiz muhabere resmini özetle.' }
   ];
 
   const handleSend = async (customPrompt) => {
@@ -245,6 +285,12 @@ Aşağıdaki hızlı komutları kullanabilir veya doğal dilde arama yapabilirsi
           setTimelineConfig({
             source: detectedWidget.source || 'RADAR',
             targetKey: detectedWidget.targetKey || 'SP048'
+          });
+        } else if (detectedWidget.type === 'WEEKDAY_RADAR') {
+          setWeekdayRadarConfig({
+            source: detectedWidget.source || 'TUMU',
+            recordType: detectedWidget.recordType || 'TUMU',
+            timeRange: detectedWidget.timeRange || 'ALL'
           });
         }
       } else {
@@ -305,32 +351,10 @@ Aşağıdaki hızlı komutları kullanabilir veya doğal dilde arama yapabilirsi
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 190px)' }}>
-      {/* Hızlı Komut Çipleri ve Widget Aç/Kapat Barı */}
-      <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-        <div style={{ overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 4, flex: 1 }}>
-          <Space size={8}>
-            {quickPrompts.map((qp, idx) => (
-              <Button
-                key={idx}
-                size="small"
-                style={{
-                  backgroundColor: '#1e293b',
-                  borderColor: '#334155',
-                  color: '#cbd5e1',
-                  borderRadius: 16,
-                  fontSize: 12
-                }}
-                onClick={() => handleSend(qp.prompt)}
-                disabled={loading}
-              >
-                {qp.label}
-              </Button>
-            ))}
-          </Space>
-        </div>
-
+      {/* Hızlı Komut Çipleri ve Widget Aç/Kapat Barı (Sola Yanaşık) */}
+      <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         {/* Sağ Panel Widget Göster/Gizle Butonları */}
-        <Space size={6}>
+        <Space size={6} wrap>
           <Button
             size="small"
             type={activeWidget === 'CALLSIGN_HEATMAP' ? 'primary' : 'default'}
@@ -375,7 +399,61 @@ Aşağıdaki hızlı komutları kullanabilir veya doğal dilde arama yapabilirsi
           >
             {activeWidget === 'WAVEFORM_TIMELINE' ? '📈 Dalga Formu (Açık)' : '📈 Dalga Formu'}
           </Button>
+
+          <Button
+            size="small"
+            type={activeWidget === 'SPECTRUM_OCCUPANCY' ? 'primary' : 'default'}
+            ghost={activeWidget === 'SPECTRUM_OCCUPANCY'}
+            icon={<BarChartOutlined style={{ color: activeWidget === 'SPECTRUM_OCCUPANCY' ? '#ef4444' : '#94a3b8' }} />}
+            onClick={() => setActiveWidget(activeWidget === 'SPECTRUM_OCCUPANCY' ? null : 'SPECTRUM_OCCUPANCY')}
+            style={{
+              borderColor: activeWidget === 'SPECTRUM_OCCUPANCY' ? '#ef4444' : '#334155',
+              color: activeWidget === 'SPECTRUM_OCCUPANCY' ? '#f87171' : '#cbd5e1',
+              borderRadius: 6
+            }}
+          >
+            {activeWidget === 'SPECTRUM_OCCUPANCY' ? '📊 Spektrum Doluluk (Açık)' : '📊 Spektrum Doluluk'}
+          </Button>
+
+          <Button
+            size="small"
+            type={activeWidget === 'WEEKDAY_RADAR' ? 'primary' : 'default'}
+            ghost={activeWidget === 'WEEKDAY_RADAR'}
+            icon={<RadarChartOutlined style={{ color: activeWidget === 'WEEKDAY_RADAR' ? '#38bdf8' : '#94a3b8' }} />}
+            onClick={() => setActiveWidget(activeWidget === 'WEEKDAY_RADAR' ? null : 'WEEKDAY_RADAR')}
+            style={{
+              borderColor: activeWidget === 'WEEKDAY_RADAR' ? '#38bdf8' : '#334155',
+              color: activeWidget === 'WEEKDAY_RADAR' ? '#38bdf8' : '#cbd5e1',
+              borderRadius: 6
+            }}
+          >
+            {activeWidget === 'WEEKDAY_RADAR' ? '🕸️ Haftalık LOB (Açık)' : '🕸️ Haftalık LOB Dağılımı'}
+          </Button>
         </Space>
+
+        <div style={{ width: 1, height: 20, backgroundColor: '#334155', margin: '0 4px' }} />
+
+        <div style={{ overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 2 }}>
+          <Space size={8}>
+            {quickPrompts.map((qp, idx) => (
+              <Button
+                key={idx}
+                size="small"
+                style={{
+                  backgroundColor: '#1e293b',
+                  borderColor: '#334155',
+                  color: '#cbd5e1',
+                  borderRadius: 16,
+                  fontSize: 12
+                }}
+                onClick={() => handleSend(qp.prompt)}
+                disabled={loading}
+              >
+                {qp.label}
+              </Button>
+            ))}
+          </Space>
+        </div>
       </div>
 
       {/* Ana Bölünmüş Çalışma Alanı (Sol Chat + Sağ Widget) */}
@@ -534,6 +612,27 @@ Aşağıdaki hızlı komutları kullanabilir veya doğal dilde arama yapabilirsi
                             📈 Dalga Formu Zaman Çizelgesini Aç
                           </Button>
                         )}
+
+                        {/* Bu yanıta ait ilişkili haftalık LOB örümcek ağı butonu */}
+                        {msg.relatedWidget?.type === 'WEEKDAY_RADAR' && (
+                          <Button
+                            size="small"
+                            type="primary"
+                            ghost
+                            icon={<RadarChartOutlined style={{ color: '#38bdf8' }} />}
+                            onClick={() => {
+                              setWeekdayRadarConfig({
+                                source: msg.relatedWidget.source || 'TUMU',
+                                recordType: msg.relatedWidget.recordType || 'TUMU',
+                                timeRange: msg.relatedWidget.timeRange || 'ALL'
+                              });
+                              setActiveWidget('WEEKDAY_RADAR');
+                            }}
+                            style={{ borderColor: '#38bdf8', color: '#38bdf8' }}
+                          >
+                            🕸️ Haftalık LOB Örümcek Ağı Grafiğini Aç
+                          </Button>
+                        )}
                       </div>
 
                       {/* LLM Telemetri Logları */}
@@ -672,6 +771,23 @@ Aşağıdaki hızlı komutları kullanabilir veya doğal dilde arama yapabilirsi
           <TacticalWaveformTimelineWidget
             initialSource={timelineConfig.source}
             initialTargetKey={timelineConfig.targetKey}
+            onClose={() => setActiveWidget(null)}
+          />
+        )}
+
+        {activeWidget === 'SPECTRUM_OCCUPANCY' && (
+          <RadarSpectrumOccupancyWidget
+            initialTimeRange={occupancyConfig.timeRange}
+            initialIdentities={occupancyConfig.identities}
+            onClose={() => setActiveWidget(null)}
+          />
+        )}
+
+        {activeWidget === 'WEEKDAY_RADAR' && (
+          <WeekdayRadarDistributionWidget
+            initialSource={weekdayRadarConfig.source}
+            initialRecordType={weekdayRadarConfig.recordType}
+            initialTimeRange={weekdayRadarConfig.timeRange}
             onClose={() => setActiveWidget(null)}
           />
         )}

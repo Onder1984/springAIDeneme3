@@ -1,28 +1,29 @@
-# Taktik Elektronik Harp (C2 EW / SIGINT) Copilot Sistemi - Versiyon 2
+# Taktik Elektronik Harp (C2 EW / SIGINT) Copilot Sistemi - Versiyon 3
 ## Kapsamlı Sistem Mimarisi, Kavramsal Doktrin ve Yazılım Dokümantasyonu
 
 ---
 
 ## 1. YÖNETİCİ ÖZETİ VE PROJE VİZYONU
 
-**Proje Adı:** Tactical EW Copilot - NextGen SIGINT Decision Support System (`tactical-ew-copilot-3`)  
-**Sürüm:** `2.0.0-RELEASE` (İkinci Nesil Mimari)  
-**Teknoloji Altyapısı:** Spring Boot 3.3.13, Java 21 (LTS), Spring AI 1.1.8, Google Gemini API, PostgreSQL 16 (400.000+ Kalıcı Kayıt)  
+**Proje Adı:** Tactical EW Copilot - NextGen SIGINT Decision Support & C2 Visualization System (`tactical-ew-copilot-3`)  
+**Sürüm:** `3.0.0-RELEASE` (Üçüncü Nesil C2 Komuta Kontrol & Çoklu Görselleştirici Mimarisi)  
+**Teknoloji Altyapısı:** Spring Boot 3.3.13, Java 21 (LTS), Spring AI 1.1.8, Google Gemini API, PostgreSQL 18 & PostGIS 3.6 (500.000+ Kalıcı Kayıt), React 19 + Ant Design 6.x + Apache ECharts 6.x  
 **Operasyonel Alan:** Askeri Komuta Kontrol (C2), Elektronik Harp (EH / EW - Electronic Warfare), Sinyal İstihbaratı (SIGINT: ELINT & COMINT)
 
-Bu doküman; sahadaki Elektronik Destek (ED / ES) ve Kestirim / Yön Bulma (DF - Direction Finding) algılayıcılarından toplanan yüz binlerce taktik radar yayını (**ELINT**) ve telsiz muhabere emisyonunu (**COMINT**) gerçek zamanlı analiz eden, karar verici komutan ve harekât analistlerine **doğal dilde durumsal farkındalık** sağlayan **Taktik Elektronik Harp Copilot Sistemi (V2)**'nin tüm teknik ve kavramsal bileşenlerini detaylandırmaktadır.
+Bu doküman; sahadaki Elektronik Destek (ED / ES) ve Kestirim / Yön Bulma (DF - Direction Finding) algılayıcılarından toplanan 500.000'i aşkın taktik radar yayını (**ELINT**) ve telsiz muhabere emisyonunu (**COMINT**) gerçek zamanlı analiz eden, karar verici komutan ve harekât analistlerine hem **doğal dilde durumsal farkındalık** hem de **etkileşimli taktik görselleştirme (ısı haritası, spektrum doluluk, dalga formu, dağılım grafikleri)** sunan **Taktik Elektronik Harp Copilot Sistemi (V3)**'nin tüm teknik ve kavramsal bileşenlerini detaylandırmaktadır.
 
-### 1.1. Versiyon 1'den Versiyon 2'ye Mimari Evrim
+### 1.1. Versiyon 1'den Versiyon 3'e Mimari Evrim
 
-| Yetenek & Kriter | Versiyon 1 (Prototip) | Versiyon 2 (Güncel Üretim Mimarisi) |
-| :--- | :--- | :--- |
-| **Sinyal Kapsamı** | Yalnızca Radar (ELINT) odaklı | **Bütünleşik SIGINT:** Radar (ELINT) + Telsiz Muhabere (COMINT) |
-| **Veri Katmanı & Boyutu** | Bellek içi (In-Memory) / Mock ~1.000 kayıt | **PostgreSQL 16:** 400.000+ kalıcı kayıt, JPA Native Indexing |
-| **Kestirim & LOB Modeli** | Düzensiz LOB çizgileri | **Tam Hiyerarşi:** Çocuklu/Çocuksuz Elipsler, Bağlı/Başıboş LOB'lar |
-| **Zaman Boyutu** | Statik zaman damgaları | **Dinamik Zaman Motoru:** "Son 1 saat", "Son 24 saat", "Bugün" |
-| **Canlı Simülasyon** | Statik veri seti | **7/24 Canlı Akış Simülatörü:** Sürekli veri akışı ve stres testi |
-| **Doğal Dil & Ajan Yeteneği** | Basit genel özetler | **Spring AI Function Calling:** Çok araçlı, Kural Motorlu Deterministik ReAct |
-| **Trafik ve Ağ Analizi** | Yok | **İkili/Tekli Konuşma Analizi, Kripto/Lisan/Frekans Dağılımı** |
+| Yetenek & Kriter | Versiyon 1 (Prototip) | Versiyon 2 (Temel Üretim) | Versiyon 3 (Güncel C2 ve Görselleştirme Mimarisi) |
+| :--- | :--- | :--- | :--- |
+| **Sinyal Kapsamı** | Yalnızca Radar (ELINT) odaklı | Radar (ELINT) + Telsiz (COMINT) | **Bütünleşik SIGINT & Çok Kaynaklı Mekânsal Füzyon** (ELINT + COMINT) |
+| **Veri Katmanı & Boyutu** | In-Memory / Mock ~1.000 kayıt | PostgreSQL 16: 400.000+ kayıt | **PostgreSQL 18 + PostGIS 3.6:** 500.000+ kayıt, GiST mekânsal indeksler |
+| **Kestirim & LOB Modeli** | Düzensiz LOB çizgileri | Çocuklu/Çocuksuz Elipsler, Bağlı/Başıboş LOB | **Tam Çift Yönlü Navigasyon:** Tıklanabilir LOB/Elips hiyerarşisi |
+| **Arayüz (Frontend)** | Statik HTML5 / Basit CSS | Basit Web Formu | **React 19 + Ant Design 6.x + ECharts 6.x:** MIL-Dark C2 Operasyon Paneli |
+| **Taktik Görselleştiriciler**| Yok | Yok | **5 Dinamik Widget:** Isı Haritası, Spektrum Doluluk, Dalga Formu, Dağılım, **Haftalık LOB Örümcek Ağı (Radar Chart)** |
+| **Hedef Detay İnceleme** | Düz metin çıktısı | Basit modal | **37 & 30 Parametreli Etkileşimli Çekmece (DetailDrawer)** |
+| **Benzerlik & Korelasyon** | Yok | Basit aralık filtresi | **1-to-1 IoU Karşılaştırma & 1-to-N 100 Puanlık Çok Kriterli Benzerlik** |
+| **Doğal Dil & Ajan Yeteneği**| Basit genel özetler | Temel ReAct Araç Çağrısı | **25+ Özelleşmiş Spring AI @Tool, Deterministik Sistem Direktifi** |
 
 ---
 
@@ -139,53 +140,73 @@ Bu bölüm, sistemi geliştiren, genişleten ve bakımını yapan yazılım müh
 
 ```mermaid
 flowchart TD
-    subgraph UI ["İstemci Katmanı (Web Browser)"]
-        WebUI["Taktik C2 Web Arayüzü (HTML5 / Vanilla CSS / JS)"]
-        RadarTab["📡 Radar (ELINT) Tablosu"]
-        ComintTab["📻 Muhabere (COMINT) Tablosu"]
-        ChatUI["💬 Taktik Copilot Karar Destek Sohbeti"]
+    subgraph UI ["İstemci Katmanı (React 19 + Ant Design 6.x + ECharts 6.x)"]
+        HeaderBar["🛰️ HeaderBar: Canlı Taktik KPI & Özet Metrikleri"]
+        TabContainer["🗂️ Sekme Konteyneri: Tabs (Card Layout)"]
+        ChatUI["💬 Taktik Copilot & Sol Konuşma Akışı"]
+        ToolBar["🧭 Sola Yanaşık Taktik Araç Çubuğu (4 Widget Butonu)"]
+        RightPanel["📊 Sağ Panel: Dinamik ECharts Taktik Görselleştiricileri"]
+        
+        subgraph Widgets ["Taktiksel Görselleştirici Widget Paketi"]
+            Heatmap["🔥 CallsignHeatmapWidget (İletişim Matrisi)"]
+            PieDist["🥧 TacticalDistributionPieWidget (11+ Kriter)"]
+            Waveform["📈 TacticalWaveformTimelineWidget (Zaman Serisi)"]
+            Occupancy["📊 RadarSpectrumOccupancyWidget (Spektrum Doluluk)"]
+        end
+        
+        Drawer["📑 37/30 Parametreli Etkileşimli Detay Çekmecesi (DetailDrawer)"]
+        RadarTable["📡 Radar (ELINT) Tablosu (Sıralama / Kolon Yönetimi)"]
+        ComintTable["📻 Muhabere (COMINT) Tablosu (Kripto / Dil / HF-VHF)"]
     end
 
-    subgraph API ["REST API Katmanı"]
-        TacticalCtrl["TacticalCopilotController (/api/tactical)"]
+    subgraph API ["REST API Katmanı (Spring Boot 3.3.13)"]
+        TacticalCtrl["TacticalCopilotController (/api/v1/tactical)"]
+        AnalyticsCtrl["Analytics API (/analytics/distribution, /spectrum-occupancy, /waveform-timeline)"]
+        ComintCtrl["Comint API (/comint/callsign-matrix, /comint/records)"]
     end
 
     subgraph Core ["Çekirdek Servis & Yapay Zeka Katmanı"]
         AgentService["TacticalAgentService (Spring AI ReAct Orchestrator)"]
         ChatMemoryEngine["ChatMemory (Session-Based Multi-Turn Memory)"]
-        GeminiLLM["Google Gemini 1.5 Flash Model (Cloud / API)"]
+        GeminiLLM["Google Gemini API (gemini-2.5-flash / flash-lite)"]
     end
 
-    subgraph Tools ["Spring AI @Tool Ekosistemi"]
+    subgraph Tools ["Spring AI @Tool Ekosistemi (24+ Operasyonel Araç)"]
         RadarTools["RadarEmissionTools (@Tool)"]
         ComintTools["ComintEmissionTools (@Tool)"]
+        SimilarityEngine["RadarSimilarityEngine (1-to-1 & 1-to-N IoU)"]
     end
 
     subgraph Repo ["Veri Erişim Katmanı (Spring Data JPA)"]
-        RadarRepo["TacticalEmissionJpaRepository (Native Queries)"]
-        ComintRepo["TacticalComintJpaRepository (Native Queries)"]
+        RadarRepo["TacticalEmissionJpaRepository (Native Queries / COUNT FILTER)"]
+        ComintRepo["TacticalComintJpaRepository (Native Queries / Collation)"]
     end
 
-    subgraph DB ["Veritabanı Katmanı (PostgreSQL 16)"]
-        PG_Radar[("tactical_emissions (208.000+ Kayıt)")]
-        PG_Comint[("tactical_comint (208.000+ Kayıt)")]
+    subgraph DB ["Veritabanı Katmanı (PostgreSQL 18 + PostGIS 3.6)"]
+        PG_Radar[("tactical_emissions (250.000+ Kayıt, GiST Spatial)")]
+        PG_Comint[("tactical_comint (250.000+ Kayıt, ICU Collation)")]
     end
 
     subgraph Sim ["Canlı Taktik Veri Motoru"]
         Streamer["TacticalLiveStreamerService (@Scheduled / 5sn)"]
     end
 
-    WebUI --> TacticalCtrl
-    TacticalCtrl --> AgentService
+    ChatUI --> ToolBar
+    ToolBar --> RightPanel
+    RightPanel --> Widgets
+    ChatUI <--> Drawer
+    RadarTable <--> Drawer
+    ComintTable <--> Drawer
+    
+    UI --> API
+    API --> AgentService
     AgentService <--> GeminiLLM
     AgentService <--> ChatMemoryEngine
     AgentService --> Tools
-    RadarTools --> RadarRepo
-    ComintTools --> ComintRepo
-    RadarRepo --> PG_Radar
-    ComintRepo --> PG_Comint
-    Streamer -->|Sürekli Canlı Veri Enjeksiyonu| PG_Radar
-    Streamer -->|Sürekli Canlı Veri Enjeksiyonu| PG_Comint
+    Tools --> SimilarityEngine
+    Tools --> Repo
+    Repo --> DB
+    Streamer -->|Sürekli Canlı Veri Enjeksiyonu| DB
 ```
 
 ---
@@ -196,45 +217,91 @@ flowchart TD
 * **Çatı (Framework):** Spring Boot 3.3.13 (`spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `spring-boot-starter-validation`).
 * **Yapay Zekâ Entegrasyonu:** Spring AI 1.1.8 (`spring-ai-starter-model-google-genai`).
 * **LLM Sağlayıcı:** Google Gemini API (`gemini-2.5-flash` / `gemini-1.5-flash`).
-* **Veritabanı:** PostgreSQL 16 + HikariCP Connection Pooling.
+* **Veritabanı:** PostgreSQL 18 + PostGIS 3.6 (GiST spatial indeksleme, ICU Türkçe Collation, HikariCP).
 * **Zamanlayıcı:** Spring Framework Task Scheduling (`@EnableScheduling`).
-* **Önyüz:** Vanilla Modern CSS (Glassmorphism, Dark Military Theme, Mobil Uyumlu Grid).
+* **Önyüz Teknolojileri:**
+  * **React 19:** Modern fonksiyonel bileşenler, ref callback'leri, transition hooks.
+  * **Ant Design 6.x:** Askeri Koyu Tema (`#080d1a`, `#0f172a`, `#1e293b`), Drawer, Table, Segmented, Popover.
+  * **Apache ECharts 6.x:** Isı haritası (Cartesian heatmap), pasta/donut/rose dağılımları, çok eksenli dalga formu zarfları, yığılmış çubuk (stacked bar) spektrum grafikleri.
+  * **Marked.js:** Taktik brifing çıktılarında interaktif etiketli Markdown render motoru.
 
 ---
 
-### 3.3. Spring AI Function Calling & `@Tool` Mimarisi
+### 3.3. Spring AI Function Calling & `@Tool` Mimarisi (24+ Araç)
 
 LLM'in halüsinasyon görmesini engellemek için **Function Calling (Araç Çağrısı)** mimarisi uygulanmıştır. LLM doğrudan veritabanına bağlanmaz; sistem tarafından denetlenen tip güvenli Java metotlarını çalıştırır:
 
-#### 1. Radar Araçları ([RadarEmissionTools.java](file:///c:/Users/onderproje/Desktop/AntigravitySpringAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java))
+#### 1. Radar Araçları ([RadarEmissionTools.java](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/RadarEmissionTools.java))
 * `getTacticalMacroStats()`: Genel radar makro metrikleri (toplam emisyon, düşman/dost/tarafsız, ET durumu).
 * `analyzeRadarHierarchy(String zaman, String kategori, String durum, Integer limit)`: 
   * Zaman kısıtlı (`SON_1_SAAT`, `SON_24_SAAT`, `BUGUN`) elips ve LOB hiyerarşisi.
   * Çocuklu vs Çocuksuz elips sayıları, oranları, ortalama LOB sayıları.
   * Bağlı vs Başıboş LOB sayıları, oranları ve coğrafi/frekans detay listesi.
 * `queryPriorityThreats(Integer limit)`: En öncelikli düşman atış kontrol ve arama radarları.
-* `searchEmissionsByRadarName(String radarName, Integer limit)`: Belirli bir radar tipini arama (örn: "Pantsir", "Patriot", "S-400").
-* `queryThreatsByModulation(...)`, `queryEmissionsByFrequencyRange(...)`, vb.
+* `getRadarSpectrumOccupancy(String timeRange, String teshisKimlik)`: 50/100/200 MHz sabit frekans aralıklarında spektrum doluluk ve kullanım yoğunluğu (Union-based) analizi.
+* `getTacticalDistribution(String source, String criterion, String timeRange, Integer limit)`: Radar veya telsiz kategorik özelliklerinin pasta/halka/gül grafik dağılımı.
+* `getWaveformTimeline(String source, String targetKey, String timeRange, Integer limit)`: Radar Spot No veya Telsiz Çağrı Adı için frekans, PRI, PW ve sinyal gücünün zamansal değişim trendi.
+* `compareRadarEmissions(String id1, String id2)`: İki radar emisyonunu 1D IoU formülleriyle zaman, frekans, PRI, PW ve ATP bazında bire bir kıyaslar.
+* `findSimilarRadarEmissions(String targetId, String timeRange, Integer limit)`: 100 puanlık çok kriterli matrisle sahada en çok benzeyen ilk N radar kaydını (Top-K) getirir.
+* `getCrossDomainCorrelations(Double maxDistanceKm, Integer limit)`: Radar ve Muhabere hata elipslerinin CEP geometrik örtüşmesi ve Mahalanobis füzyonu.
+* `getElectronicAttackReport()`, `analyzeRadarWaveformAgility()`, `getElectronicOrderOfBattleSummary()`, vb.
 
-#### 2. Muhabere Araçları ([ComintEmissionTools.java](file:///c:/Users/onderproje/Desktop/AntigravitySpringAIDeneme3/src/main/java/com/c2/ew/agent/tools/ComintEmissionTools.java))
+#### 2. Muhabere Araçları ([ComintEmissionTools.java](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/tools/ComintEmissionTools.java))
 * `getComintMacroStats()`: Genel muhabere istatistikleri (HF/VHF, dil dağılımı, haberleşme şekilleri).
 * `analyzeComintHierarchy(String zaman, String kategori, String durum, Integer limit)`:
   * Zaman kısıtlı telsiz elipsi ve telsiz LOB'u hiyerarşisi.
   * Başıboş telsiz LOB'ları (tekil dinleme karakolu kayıtları).
-* `analyzeComintDialogueTraffic(String zaman, String konusmaTipi, Integer limit)`:
-  * İkili (1'e 1) ve tekli konuşma trafik analizi.
-  * En yoğun konuşan çağrı adı çiftleri, mesaj adedi, ortalama süre, lisan ve frekansları.
+* `getCallsignPairInteractionStats(String zaman, Integer limit)`: Telsiz çağrı adı ikililerini (Link Pairs), konuşma/temas sayılarını ve toplam konuşma süresini döner (Isı Haritası motoru).
+* `getMostActiveCallsigns(String zaman, Integer limit)`: En aktif telsiz çağrı adlarının sıralaması.
+* `queryComintCallsignNetwork(String cagriAdi, String karsiCagriAdi, String zaman)`: İki istasyon arasındaki karşılıklı link haritası ve tüm frekans geçmişi.
+* `getComintTrafficTrend(String zaman, Integer surgeThresholdMultiplier)`: Saatlik hareketlenme ve trafik patlaması (Surge / Spike) analizi.
 * `queryPriorityComintThreats(Integer limit)`: Kriptolu ve darbe-patlama düşman muhabere ağları.
-* `searchComintByCallSign(String callSign, Integer limit)`: Belirli bir çağrı adının (örn: "OMAR-11", "VOLGA-01") tüm geçmişi.
+* `getComsecAndTransmissionTactics()`: Kripto, darbe-patlama, karıştırma ve hareketli telsiz (MTI) raporu.
+* `getComintEmissionDetails(String comintId)`: Tekil bir muhabere kaydının 30 parametresinin tamamı.
 
 #### 3. Araç İcra Takip ve Günlükleme (ThreadLocal Logging)
 Her araç icrası, `ThreadLocal<List<String>> CALL_LOGS` üzerinden kaydedilir. Bu sayede REST yanıtındaki `executionLogs` dizisinde operatöre *"Yapay zeka hangi Java araçlarını çalıştırdı?"* şeffaf olarak gösterilir.
 
 ---
 
-### 3.4. Sistem Direktifi ve LLM Orkestrasyonu
+### 3.4. Taktik Görselleştirme ve Komuta Kontrol Arayüz Mimarisi (V3)
 
-[`TacticalAgentService.java`](file:///c:/Users/onderproje/Desktop/AntigravitySpringAIDeneme3/src/main/java/com/c2/ew/agent/service/TacticalAgentService.java) sınıfı, `ChatClient` ile Gemini API arasındaki köprüyü kurar.
+Sistemin V3 sürümünde önyüz, karar vericinin tek ekranda hem sohbet edebileceği hem de bağlamsal grafik panellerini inceleyebileceği **bölünmüş panel (Split-Screen) ve tam ekran modal** mimarisine kavuşturulmuştur:
+
+1. **Sola Yanaşık Taktik Araç Çubuğu:**
+   * Operatörün tek tıkla sağ paneli açıp kapatabilmesi için **4 ana taktik görselleştirici butonu** en sola yanaşık olarak konumlandırılmıştır:
+     - `🔥 Isı Haritası`: COMINT Çağrı Adı İletişim Matrisi
+     - `🥧 Dağılım Grafiği`: ELINT/COMINT 11+ Kriter Pasta/Halka Dağılımı
+     - `📈 Dalga Formu`: Zamansal RF & Darbe Parametreleri Değişimi
+     - `📊 Spektrum Doluluk`: 50/100/200 MHz Sabit Aralıklar ve Çoklu Teşhis Analizi
+   * Araç butonlarının hemen sağında ayraç ve hızlı eylem butonları (`📡 Genel Taktik Durumu Özetle`) yer alır.
+
+2. **Telsiz İletişim Isı Haritası (`CallsignHeatmapWidget.jsx`):**
+   * Kaynak çağrı adları (Y Ekseni) ile Hedef çağrı adları (X Ekseni) arasındaki çapraz etkileşim matrisidir.
+   * **İki Farklı Skala:** Aşırı değer sapmalarını engelleyen 5 dilimli akıllı kademe (`PIECEWISE` Quintile) veya doğrusal termal spektrum (`CONTINUOUS`).
+   * Hücrelerin üzerine gelindiğinde toplam görüşme adedi, süre, VHF/HF oranları ve kripto baskınlığı zengin tooltip ile sunulur.
+
+3. **Taktik Dağılım Analizi (`TacticalDistributionPieWidget.jsx`):**
+   * Radar Spot No, Teşhis, Görev, Polarizasyon, Modülasyon, Platform, Bölge, Çağrı Adı, Lisan ve Bant kriterlerine göre anlık pasta dağılımı.
+   * `Pasta`, `Halka (Donut)` ve `Gül (Nightingale Rose)` görsel modları; tıklanabilir dinamik lejant ve dış etiketler.
+
+4. **Taktik Dalga Formu & Zamansal Değişim Çizelgesi (`TacticalWaveformTimelineWidget.jsx`):**
+   * Üst grafikte Frekans (MHz), PRI ($\mu s$) veya PW ($\mu s$) minimum/maksimum zarf bandı (Envelope Area) ve merkez çizgi trendi.
+   * Alt grafikte senkronize darbe sinyal gücü (Genlik - dBm) çubukları ve kaydırılabilir `DataZoom` zaman penceresi.
+
+5. **Radar Spektrum Doluluk Analizi (`RadarSpectrumOccupancyWidget.jsx`):**
+   * Sabit frekans dilimlerinde (50 MHz, 100 MHz, 200 MHz) radar yayınlarının örtüşme alanlarını (Union) hesaplayarak spektrumun ne kadarının işgal edildiğini raporlar.
+   * Düşman, Dost, Tarafsız ve Bilinmeyen unsurların spektrum payını yığılmış çubuk grafiği (Stacked Bar) ve sıralanabilir taktik tablo ile görselleştirir.
+
+6. **37 & 30 Parametreli Hedef Detay Çekmecesi (`DetailDrawer.jsx`):**
+   * Radar için 37, Muhabere için 30 teknik parametre (RF, PRI, PW, ATP, Anten Kutuplanması, Sensör Konumu, Kestirim Elipsi CEP, Operatör Notu, Onay Durumu).
+   * **Çift Yönlü Doktrin Linkleri:** Kestirim incelenirken bağlı LOB'lara; LOB incelenirken bağlı olduğu kestirime doğrudan tıklanarak anında geçiş yapılabilir.
+
+---
+
+### 3.5. Sistem Direktifi ve LLM Orkestrasyonu
+
+[`TacticalAgentService.java`](file:///c:/Users/Aselsan/Desktop/EWSpringAI_v1/springAIDeneme3/src/main/java/com/c2/ew/agent/service/TacticalAgentService.java) sınıfı, `ChatClient` ile Gemini API arasındaki köprüyü kurar.
 
 **Deterministik Kural Tasarımı (`SYSTEM_DIRECTIVE`):**
 1. **Askeri Doktrin:** Bilgi uydurmak yasaktır; tüm sayılar ve kimlikler araçlardan alınmalıdır.
@@ -242,9 +309,11 @@ Her araç icrası, `ThreadLocal<List<String>> CALL_LOGS` üzerinden kaydedilir. 
    * Çocuklu/Çocuksuz elipsler veya doğrudan kestirimler sorulduğunda `analyzeRadarHierarchy(..., "ELIPS", ...)` veya `analyzeComintHierarchy(..., "ELIPS", ...)` çağrılır.
    * Başıboş/Bağlı LOB'lar sorulduğunda `kategori="LOB"` ve `durum="BASIBOS"` parametreleriyle araçlar tetiklenir.
    * Peşin etiketleme yasağı: Çocuksuz kestirimler asla doğrudan "Link-16" olarak adlandırılmaz; kaydın kendi açıklamasında spesifik bir kaynak yoksa *"Çocuksuz Kestirim (Ham LOB Kayıtsız / Doğrudan Kestirim)"* denir.
-3. **Zaman Uyarlaması:** Sorudaki zaman ifadeleri ("son 1 saat", "son 24 saat", "bugün") otomatik olarak standart zaman kodlarına (`SON_1_SAAT`, `SON_24_SAAT`, `BUGUN`) dönüştürülür.
-4. **Hafıza (ChatMemory):** Her oturum için `conversationId` bazlı çok turlu konuşma geçmişi korunur. Operatör ardışık olarak *"Peki ya telsizler?"* dediğinde önceki turun zaman bağlamı korunur.
-5. **Direnç (Resilience):** Gemini API geçici ağ veya kota hatalarında (HTTP 429/503) 3 denemeli üstel geri çekilme (exponential backoff: 1.2s, 2.4s, 3.6s) algoritması devrededir.
+3. **Kural 9 (Görselleştirici & Matris Tetikleme):**
+   * Operatör spektrum doluluk sorduğunda `getRadarSpectrumOccupancy`; dalga formu trendi sorduğunda `getWaveformTimeline`; kategorik oranlar sorduğunda `getTacticalDistribution`; çağrı çifti etkileşimi sorduğunda `getCallsignPairInteractionStats` çalıştırılır.
+4. **Zaman Uyarlaması:** Sorudaki zaman ifadeleri ("son 1 saat", "son 24 saat", "bugün") otomatik olarak standart zaman kodlarına (`SON_1_SAAT`, `SON_24_SAAT`, `BUGUN`) dönüştürülür.
+5. **Hafıza (ChatMemory):** Her oturum için `conversationId` bazlı çok turlu konuşma geçmişi korunur.
+6. **Direnç (Resilience):** Gemini API geçici ağ veya kota hatalarında (HTTP 429/503) 3 denemeli üstel geri çekilme (exponential backoff) devrededir.
 
 ---
 
@@ -349,8 +418,8 @@ Statik bir sistem sahayı temsil edemez. [`TacticalLiveStreamerService`](file://
 
 Sistem hem web önyüzü hem de harici C2 sistemleri için zengin REST servisleri sunar:
 
-### 6.1. Taktik Karar Destek API'si
-* **`POST /api/tactical/analyze`**
+### 6.1. Taktik Karar Destek ve Ajan API'si
+* **`POST /api/v1/tactical/analyze`**
   * **İstek Gövdesi:**
     ```json
     {
@@ -363,20 +432,37 @@ Sistem hem web önyüzü hem de harici C2 sistemleri için zengin REST servisler
     {
       "operationalBriefing": "## TAKTİK OPERASYONEL BRİFİNG\n### SON 1 SAATLİK MUHABERE...",
       "executionLogs": [
-        "Tool Cagrisi: analyzeComintHierarchy(zaman=SON_1_SAAT, kategori=LOB, durum=BASIBOS, limit=15) calistirildi."
+        "Tool Çağrısı: analyzeComintHierarchy(zaman=SON_1_SAAT, kategori=LOB, durum=BASIBOS, limit=15) çalıştırıldı."
       ]
     }
     ```
 
-### 6.2. Radar Tablo ve Filtreleme API'leri
-* **`GET /api/tactical/radar/emissions?page=0&size=50`**: Sayfalanmış tüm radar emisyonları.
-* **`GET /api/tactical/radar/search?radarName=Pantsir&teshis=DUSMAN`**: Gelişmiş radar arama.
-* **`GET /api/tactical/radar/stats`**: Anlık makro radar istatistikleri.
+### 6.2. Taktik Analitik ve Görselleştirici API'leri (V3 Yeni)
+* **`GET /api/v1/tactical/analytics/spectrum-occupancy`**
+  * **Parametreler:** `timeRange` (`SON_1_SAAT`, `SON_24_SAAT`, `ALL`), `identities` (DUSMAN, DOST, TARAFSIZ, BILINMEYEN), `binStep` (50, 100, 200 MHz).
+  * **İşlev:** Radar frekans spektrumundaki sabit aralıkların kullanım yoğunluğu ve örtüşme (Union) yüzdeleri.
+* **`GET /api/v1/tactical/analytics/distribution`**
+  * **Parametreler:** `source` (`RADAR`, `COMINT`), `criterion` (`TESHIS`, `GOREV`, `POLARIZASYON`, `CAGRI_ADI`, vb.), `timeRange`, `limit`.
+  * **İşlev:** 11+ kategori bazında pasta, halka ve gül grafiği dilimleme verileri.
+* **`GET /api/v1/tactical/analytics/waveform-timeline`**
+  * **Parametreler:** `source`, `targetKey` (`SP048`, `VOLGA-01`), `timeRange`, `limit`.
+  * **İşlev:** Hedefin frekans, PRI, PW zarf aralıkları ve sinyal gücü (dBm) zaman serisi.
+* **`GET /api/v1/tactical/comint/callsign-matrix`**
+  * **Parametreler:** `baslangicZamani`, `bitisZamani`, `limit`.
+  * **İşlev:** Telsiz çağrı adı ikililerinin toplam temas sayısı, konuşma süreleri, VHF/HF ve kripto dağılım matrisi.
+* **`GET /api/v1/tactical/analytics/weekday-radar`**
+  * **Parametreler:** `source` (`TUMU`, `RADAR`, `COMINT`), `recordType` (`TUMU`, `SADECE_LOB`, `SADECE_KESTIRIM`), `timeRange` (`ALL`, `SON_7_GUN`, `SON_30_GUN`).
+  * **İşlev:** PostgreSQL `EXTRACT(ISODOW FROM COALESCE(ilk_tespit_zamani, son_tespit_zamani))` ile Pazartesi-Pazar (1..7) günleri bazında hem Radar hem de Muhabere için tek geçişli koşullu toplamaları (`COUNT(*) FILTER (...)`) hesaplar; Apache ECharts 7 kollu örümcek ağı (radar) grafiğine zengin metrik veri seti sağlar.
 
-### 6.3. Muhabere Tablo ve Filtreleme API'leri
-* **`GET /api/tactical/comint/records?page=0&size=50`**: Sayfalanmış tüm telsiz muhabere kayıtları.
-* **`GET /api/tactical/comint/search?cagriAdi=OMAR-11&lisan=Arapça`**: Gelişmiş telsiz arama.
-* **`GET /api/tactical/comint/stats`**: Anlık makro muhabere istatistikleri.
+### 6.3. Radar Tablo ve Detay API'leri
+* **`GET /api/v1/tactical/emissions?page=0&size=15&sortField=minFrekansMhz&sortOrder=asc`**: Sayfalanmış ve sıralanmış radar tablosu.
+* **`GET /api/v1/tactical/emissions/{id}`**: 37 parametreli tekil radar detay kartı ve bağlı LOB/elips ilişkileri.
+* **`GET /api/v1/tactical/stats`**: Anlık canlı radar makro metrikleri.
+
+### 6.4. Muhabere (COMINT) Tablo ve Detay API'leri
+* **`GET /api/v1/tactical/comint?page=0&size=15`**: Sayfalanmış telsiz muhabere tablosu.
+* **`GET /api/v1/tactical/comint/{id}`**: 30 parametreli tekil muhabere detay kartı.
+* **`GET /api/v1/tactical/comint/stats`**: Anlık canlı muhabere makro metrikleri.
 
 ---
 
@@ -392,26 +478,34 @@ Taktik operatör aşağıdaki doğal dil sorgularıyla sistemi tam kapasite yön
 > **Operatör Sorusu:** *"Son 1 saatteki başıboş telsiz LOB'larını detaylarıyla listeler misin?"*  
 > **Sistemin Yanıtı:** Herhangi bir kestirime dahil olmamış, tek istasyon tarafından yakalanmış acil veya tekil kerteriz hatlarının çağrı adları, frekansları, açıları ve dinleme postası konumları.
 
-### Senaryo 3: İkili Muhabere Ağı ve Trafik Analizi
+### Senaryo 3: İkili Muhabere Ağı ve Isı Haritası Analizi
 > **Operatör Sorusu:** *"Son 24 saatte telsizde en çok kim kiminle konuştu? İkili konuşma trafiğini çıkar."*  
-> **Sistemin Yanıtı:** En yoğun irtibat kuran istasyon çiftleri (Örn: `OMAR-11` ↔ `EAGLE-LEAD`, `VOLGA-01` ↔ `VOLGA-04`), konuşma adedi, dili, haberleşme modu ve frekansı.
+> **Sistemin Yanıtı:** En yoğun irtibat kuran istasyon çiftleri (Örn: `VOLGA-01` ↔ `VOLGA-04`), konuşma adedi, dili, haberleşme modu ve frekansı; sağ panelde otomatik olarak açılan Telsiz İletişim Isı Haritası.
 
-### Senaryo 4: Kritik Düşman Tehditleri ve Karıştırma
+### Senaryo 4: Radar Spektrum Doluluk & Sabit Bant Yoğunluğu
+> **Operatör Sorusu:** *"Düşman radar yayınlarının sabit frekans aralıklarındaki spektrum doluluk ve kullanım yoğunluğunu analiz et."*  
+> **Sistemin Yanıtı:** 50 MHz aralıklarla radar örtüşme oranları, düşman ve dost yayın yoğunlukları; sağ panelde otomatik açılan Spektrum Doluluk grafiği.
+
+### Senaryo 5: Kritik Düşman Tehditleri ve Karıştırma
 > **Operatör Sorusu:** *"Sahadaki aktif Elektronik Taarruz (ET) uygulanan veya taciz yapan düşman radarlarını özetle."*  
 > **Sistemin Yanıtı:** Pantsir, S-400 veya Buk-M2 gibi atış kontrol radarlarının koordinatları, modülasyon tipleri ve karıştırma durumları.
 
+### Senaryo 6: Haftalık LOB ve Kestirim Örümcek Ağı Analizi (Düşman Harekât Ritmi)
+> **Operatör Sorusu:** *"Haftanın günlerine göre radar ya da muhabere kestirim/ LOB sayısını grafiğini ver."*  
+> **Sistemin Yanıtı:** Pazartesi'den Pazar'a kadar olan günlerde tespit edilen radar ve muhabere yayınlarının LOB ve Kestirim ayrımıyla sayısal tablosu, askeri operasyonel niyet değerlendirmesi ve sağ panelde otomatik olarak açılan 7 kollu Apache ECharts Örümcek Ağı (Radar) Grafiği. Operatör bu widget üzerinde kaynak (Radar/Muhabere/Tümü), kayıt niteliği (Sadece LOB/Sadece Kestirim/Tümü) ve zaman penceresini dinamik olarak değiştirebilir.
+
 ---
 
-## 8. GELECEK VİZYONU VE GELİŞTİRME YOL HARİTASI (V3 İÇİN ÖNERİLER)
+## 8. GELECEK VİZYONU VE GELİŞTİRME YOL HARİTASI (V3.x & V4 İÇİN ÖNERİLER)
 
-1. **İlişkisel Harita ve Grafik Arayüzü Entegrasyonu:**
-   * Kestirim elipsleri ile bağlı LOB çizgilerini gösteren vektörel harita (OpenLayers / Cesium 3D) görünümü.
+1. **3D Vektörel Taktik Harita Entegrasyonu:**
+   * Kestirim elipsleri, sensör LOB hatları ve kapsama alanlarını gösteren WebGL/Cesium 3D veya OpenLayers harita bileşeni.
 2. **Kestirim Menşei İçin Bağımsız Enum Parametresi:**
-   * Çocuksuz kestirimlerin kaynaklarının serbest `operator_notu` metninin yanı sıra yapısal `kestirim_mensei` (`LINK16`, `IHA_INTIKAL`, `TDOA_DOGRUDAN`, `MANUEL`) kolonu ile indekslenmesi.
+   * Çocuksuz kestirimlerin kaynaklarının serbest metin yerine yapısal `KestirimMensei` (`LINK16`, `IHA_INTIKAL`, `TDOA_DOGRUDAN`, `MANUEL`) kolonu ile indekslenmesi.
 3. **Otomatik Füzyon Öneri Motoru (Smart Association Engine):**
-   * Başıboş kalan LOB'ların frekans, zaman ve açı korelasyonuyla arka planda otomatik olarak mevcut elipslerle eşleştirilmesi veya yeni füzyon elipsi üretilmesi için operatöre yapay zeka destekli öneri sunulması.
+   * Başıboş kalan LOB'ların frekans, zaman ve açı korelasyonuyla arka planda otomatik olarak mevcut elipslerle eşleştirilmesi için operatöre yapay zeka destekli öneri sunulması.
 4. **Çoklu Ajan (Multi-Agent Swarm) Mimarisi:**
    * Radar Analisti Ajanı, Muhabere Analisti Ajanı ve Baş Harekât Subayı Ajanı olmak üzere özelleşmiş alt ajanların müzakere ederek ortak taktik resim oluşturması.
 
 ---
-*Bu dokümantasyon, Tactical EW Copilot V2 projesinin tüm mimari, kavramsal ve kod bileşenlerini eksiksiz olarak yansıtmak üzere hazırlanmıştır.*
+*Bu dokümantasyon, Tactical EW Copilot V3 projesinin tüm mimari, kavramsal ve kod bileşenlerini eksiksiz olarak yansıtmak üzere güncellenmiştir.*

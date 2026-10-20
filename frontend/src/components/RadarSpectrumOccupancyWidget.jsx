@@ -39,7 +39,7 @@ const IDENTITY_CONFIG = {
   MUHTEMEL_DUSMAN: { label: 'MUHT. DÜŞMAN', color: '#f97316', gradient: ['#fb923c', '#ea580c'] },
   BILINMEYEN: { label: 'BİLİNMEYEN', color: '#eab308', gradient: ['#fde047', '#ca8a04'] },
   DOST: { label: 'DOST', color: '#10b981', gradient: ['#34d399', '#059669'] },
-  TARAFSIZ: { label: 'TARAFSIZ', color: '#64748b', gradient: ['#94a3b8', '#475569'] }
+  TARAFSIZ: { label: 'TARAFSIZ', color: '#a855f7', gradient: ['#c084fc', '#9333ea'] }
 };
 
 export default function RadarSpectrumOccupancyWidget({
@@ -85,16 +85,18 @@ export default function RadarSpectrumOccupancyWidget({
   }, [timeRange, selectedIdentities, binStep]);
 
   const handleIdentityToggle = (tag, checked) => {
-    let next;
-    if (checked) {
-      next = [...selectedIdentities, tag];
-    } else {
-      next = selectedIdentities.filter(t => t !== tag);
-      if (next.length === 0) {
-        next = ['DUSMAN']; // En az bir seçim kalmalı
+    setSelectedIdentities(prev => {
+      let next;
+      if (checked) {
+        next = [...prev, tag];
+      } else {
+        next = prev.filter(t => t !== tag);
+        if (next.length === 0) {
+          next = ['DUSMAN']; // En az bir seçim kalmalı
+        }
       }
-    }
-    setSelectedIdentities(next);
+      return next;
+    });
   };
 
   // ECharts Grafik Konfigürasyonu
@@ -139,10 +141,16 @@ export default function RadarSpectrumOccupancyWidget({
         label: {
           show: true,
           position: 'top',
-          formatter: (p) => (p.value > 0 ? `%${p.value}` : ''),
+          formatter: (p) => {
+            if (!p || p.value <= 0) return '';
+            const cnt = p.data?.detailInfo?.emissionCount;
+            const cStr = cnt != null && cnt > 0 ? (cnt >= 1000 ? (cnt / 1000).toFixed(1) + 'k' : cnt) : null;
+            return cStr ? `%${p.value}\n(${cStr})` : `%${p.value}`;
+          },
           color: '#f8fafc',
-          fontSize: isModal ? 12 : 11,
-          fontWeight: 'bold'
+          fontSize: isModal ? 11 : 9,
+          fontWeight: 'bold',
+          lineHeight: 12
         },
         data: seriesData
       });
@@ -176,11 +184,17 @@ export default function RadarSpectrumOccupancyWidget({
             ])
           },
           label: {
-            show: isModal,
+            show: true,
             position: 'top',
-            formatter: (p) => (p.value > 0 ? `%${p.value}` : ''),
+            formatter: (p) => {
+              if (!p || p.value <= 0) return '';
+              const cnt = p.data?.detailInfo?.emissionCount;
+              const cStr = cnt != null && cnt > 0 ? (cnt >= 1000 ? (cnt / 1000).toFixed(1) + 'k' : cnt) : null;
+              return cStr ? `%${p.value}\n(${cStr})` : `%${p.value}`;
+            },
             color: '#cbd5e1',
-            fontSize: 10
+            fontSize: 8,
+            lineHeight: 10
           },
           data: seriesData
         });
@@ -231,14 +245,15 @@ export default function RadarSpectrumOccupancyWidget({
           return html;
         }
       },
-      legend: !isSingleIdentity ? {
+      legend: {
+        show: !isSingleIdentity,
         data: legendData,
         top: 4,
         right: 16,
         textStyle: { color: '#cbd5e1', fontSize: 11 },
         itemWidth: 12,
         itemHeight: 8
-      } : undefined,
+      },
       grid: {
         left: isModal ? '4%' : '6%',
         right: '4%',
@@ -298,24 +313,60 @@ export default function RadarSpectrumOccupancyWidget({
       chartInstance.current = echarts.init(chartRef.current);
     }
     const option = buildChartOption(data, false);
-    chartInstance.current.setOption(option, true);
+    chartInstance.current.clear();
+    chartInstance.current.setOption(option, { notMerge: true, replaceMerge: ['series', 'legend'] });
+
+    chartInstance.current.off('legendselectchanged');
+    chartInstance.current.on('legendselectchanged', (p) => {
+      const map = {
+        'DÜŞMAN': 'DUSMAN',
+        'MUHT. DÜŞMAN': 'MUHTEMEL_DUSMAN',
+        'BİLİNMEYEN': 'BILINMEYEN',
+        'DOST': 'DOST',
+        'TARAFSIZ': 'TARAFSIZ'
+      };
+      const key = map[p.name] || p.name;
+      if (key) {
+        handleIdentityToggle(key, false);
+      }
+    });
 
     const handleResize = () => chartInstance.current?.resize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [data, viewMode]);
 
-  // Modal Fullscreen Render
-  useEffect(() => {
-    if (!modalVisible || !modalChartRef.current || !data) return;
-
-    if (!modalChartInstance.current) {
-      modalChartInstance.current = echarts.init(modalChartRef.current);
+  // Modal Fullscreen Render Fonksiyonu
+  const renderModalChart = () => {
+    if (!modalChartRef.current || !data) return;
+    try {
+      let inst = echarts.getInstanceByDom(modalChartRef.current);
+      if (!inst) {
+        inst = echarts.init(modalChartRef.current);
+      }
+      modalChartInstance.current = inst;
+      const option = buildChartOption(data, true);
+      inst.clear();
+      inst.setOption(option, { notMerge: true, replaceMerge: ['series', 'legend'] });
+      inst.resize();
+    } catch (err) {
+      console.error('Modal spektrum doluluk grafik render hatası:', err);
     }
-    const option = buildChartOption(data, true);
-    modalChartInstance.current.setOption(option, true);
-    modalChartInstance.current.resize();
-  }, [modalVisible, data]);
+  };
+
+  // Modal Görünürlüğü ve Veri Değişiminde Tetikleme
+  useEffect(() => {
+    if (!modalVisible || !data) return;
+    renderModalChart();
+    const t1 = setTimeout(renderModalChart, 50);
+    const t2 = setTimeout(renderModalChart, 200);
+    const t3 = setTimeout(renderModalChart, 400);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [modalVisible, data, viewMode]);
 
   // Taktik Tablo Kolonları
   const tableColumns = [
@@ -588,7 +639,7 @@ export default function RadarSpectrumOccupancyWidget({
         fontSize: 10,
         color: '#64748b'
       }}>
-        <span>🕒 Zaman Penceresi: <b style={{ color: '#cbd5e1' }}>{data?.timeRangeLabel || timeRange}</b></span>
+        <span>🕒 Zaman: <b style={{ color: '#cbd5e1' }}>{data?.timeRangeLabel || timeRange}</b> | ⚡ <b style={{ color: '#38bdf8' }}>{(data?.bands || []).reduce((s, b) => s + (b.totalEmissionCount || 0), 0).toLocaleString('tr-TR')}</b> Yayın Teması</span>
         <span>🛡️ Seçili Teşhis: <b style={{ color: '#cbd5e1' }}>{selectedIdentities.join(', ')}</b></span>
       </div>
 
@@ -600,6 +651,13 @@ export default function RadarSpectrumOccupancyWidget({
           </div>
         }
         open={modalVisible}
+        afterOpenChange={(open) => {
+          if (open) {
+            renderModalChart();
+            setTimeout(renderModalChart, 50);
+            setTimeout(renderModalChart, 250);
+          }
+        }}
         onCancel={() => setModalVisible(false)}
         footer={null}
         width="90vw"
@@ -608,8 +666,17 @@ export default function RadarSpectrumOccupancyWidget({
           header: { background: '#0f172a', borderBottom: '1px solid #334155' }
         }}
       >
-        <div style={{ height: '70vh', width: '100%' }}>
-          <div ref={modalChartRef} style={{ width: '100%', height: '100%' }} />
+        <div style={{ height: '70vh', width: '100%', minHeight: 480 }}>
+          <div
+            ref={(el) => {
+              modalChartRef.current = el;
+              if (el && modalVisible && data) {
+                renderModalChart();
+                setTimeout(renderModalChart, 60);
+              }
+            }}
+            style={{ width: '100%', height: '100%' }}
+          />
         </div>
       </Modal>
     </Card>
