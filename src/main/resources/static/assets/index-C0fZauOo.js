@@ -591,14 +591,18 @@ Please report this to https://github.com/markedjs/marked.`,e){let e=`<p>An error
 
     if(isSingle){
       let singleKey=dto.selectedIdentities[0];
-      let cfg=ID_CONFIG[singleKey]||{label:singleKey,grad:[`#38bdf8`,`#0284c7`]};
+      let cfg=ID_CONFIG[singleKey]||{label:singleKey,color:`#38bdf8`,grad:[`#38bdf8`,`#0284c7`]};
       seriesList.push({
         name:cfg.label,
         type:`bar`,
         barMaxWidth:isModal?55:38,
         itemStyle:{
           borderRadius:[6,6,0,0],
-          color:new gB(0,0,0,1,[{offset:0,color:cfg.grad[0]},{offset:1,color:cfg.grad[1]}])
+          color:{
+            type:`linear`,
+            x:0,y:0,x2:0,y2:1,
+            colorStops:[{offset:0,color:cfg.grad[0]},{offset:1,color:cfg.grad[1]}]
+          }
         },
         label:{
           show:!0,
@@ -615,7 +619,7 @@ Please report this to https://github.com/markedjs/marked.`,e){let e=`<p>An error
       });
     }else{
       (dto.selectedIdentities||[]).forEach(idKey=>{
-        let cfg=ID_CONFIG[idKey]||{label:idKey,grad:[`#94a3b8`,`#64748b`]};
+        let cfg=ID_CONFIG[idKey]||{label:idKey,color:`#94a3b8`,grad:[`#94a3b8`,`#64748b`]};
         legendNames.push(cfg.label);
         seriesList.push({
           name:cfg.label,
@@ -624,7 +628,11 @@ Please report this to https://github.com/markedjs/marked.`,e){let e=`<p>An error
           barGap:`15%`,
           itemStyle:{
             borderRadius:[4,4,0,0],
-            color:new gB(0,0,0,1,[{offset:0,color:cfg.grad[0]},{offset:1,color:cfg.grad[1]}])
+            color:{
+              type:`linear`,
+              x:0,y:0,x2:0,y2:1,
+              colorStops:[{offset:0,color:cfg.grad[0]},{offset:1,color:cfg.grad[1]}]
+            }
           },
           label:{
             show:isModal,
@@ -713,34 +721,38 @@ Please report this to https://github.com/markedjs/marked.`,e){let e=`<p>An error
 
   (0,v.useEffect)(()=>{
     if(!chartContainerRef.current)return;
-    if(!chartInstRef.current){
-      chartInstRef.current=J8.init(chartContainerRef.current);
-    }
+    let chart=Iq(chartContainerRef.current,`dark`);
+    chartInstRef.current=chart;
     if(occupancyData&&occupancyData.bands){
       let opt=createChartOption(occupancyData,!1);
-      chartInstRef.current.setOption(opt,!0);
+      chart.setOption(opt,!0);
+      chart.resize();
     }
-    const handleResize=()=>{chartInstRef.current&&chartInstRef.current.resize()};
+    const handleResize=()=>{chart&&chart.resize()};
     window.addEventListener(`resize`,handleResize);
     return()=>window.removeEventListener(`resize`,handleResize);
   },[occupancyData,currentViewMode]);
 
   (0,v.useEffect)(()=>{
     if(!isModalOpen||!modalContainerRef.current)return;
-    setTimeout(()=>{
-      if(!modalInstRef.current){
-        modalInstRef.current=J8.init(modalContainerRef.current);
-      }
+    let timer=setTimeout(()=>{
+      if(!modalContainerRef.current)return;
+      let modalChart=Iq(modalContainerRef.current,`dark`);
+      modalInstRef.current=modalChart;
       if(occupancyData&&occupancyData.bands){
         let opt=createChartOption(occupancyData,!0);
-        modalInstRef.current.setOption(opt,!0);
-        modalInstRef.current.resize();
+        modalChart.setOption(opt,!0);
+        modalChart.resize();
       }
     },100);
+    return()=>clearTimeout(timer);
   },[isModalOpen,occupancyData]);
 
-  return (0,Y.jsxs)(k,{
-    style:{backgroundColor:`#0b1329`,border:`1px solid #1e293b`,borderRadius:8,padding:12,boxShadow:`0 4px 20px rgba(0,0,0,0.4)`},
+  const stepOptions=[{label:`50 MHz`,val:50},{label:`100 MHz`,val:100},{label:`200 MHz`,val:200}];
+  const timeOptions=[{label:`1 Saat`,val:`SON_1_SAAT`},{label:`1 Gün`,val:`SON_24_SAAT`},{label:`1 Hafta`,val:`SON_1_HAFTA`},{label:`Tümü`,val:`ALL`}];
+
+  return (0,Y.jsxs)(`div`,{
+    style:{backgroundColor:`#0b1329`,border:`1px solid #1e293b`,borderRadius:8,padding:12,boxShadow:`0 4px 20px rgba(0,0,0,0.4)`,display:`flex`,flexDirection:`column`,height:`100%`},
     children:[
       (0,Y.jsxs)(`div`,{
         style:{display:`flex`,justifyContent:`space-between`,alignItems:`center`,borderBottom:`1px solid #1e293b`,paddingBottom:8,marginBottom:8},
@@ -777,7 +789,7 @@ Please report this to https://github.com/markedjs/marked.`,e){let e=`<p>An error
                   onClick:()=>toggleIdentity(idKey),
                   style:{
                     fontSize:9,
-                    padding:`1px 6px`,
+                    padding:`2px 6px`,
                     borderRadius:4,
                     cursor:`pointer`,
                     border:isSel?`1px solid `+cfg.color:`1px solid #334155`,
@@ -793,43 +805,66 @@ Please report this to https://github.com/markedjs/marked.`,e){let e=`<p>An error
           (0,Y.jsxs)(`div`,{
             style:{display:`flex`,gap:4,alignItems:`center`,flexWrap:`wrap`},
             children:[
-              (0,Y.jsxs)(qb,{
-                size:`small`,
-                value:currentBinStep,
-                onChange:e=>setCurrentBinStep(e.target.value),
-                children:[
-                  (0,Y.jsx)(qb.Button,{value:50,children:`50M`}),
-                  (0,Y.jsx)(qb.Button,{value:100,children:`100M`}),
-                  (0,Y.jsx)(qb.Button,{value:200,children:`200M`})
-                ]
+              (0,Y.jsx)(`div`,{
+                style:{display:`inline-flex`,backgroundColor:`#1e293b`,borderRadius:4,padding:1,border:`1px solid #334155`},
+                children:stepOptions.map(opt=>{
+                  let isSel=currentBinStep===opt.val;
+                  return (0,Y.jsx)(`button`,{
+                    key:opt.val,
+                    type:`button`,
+                    onClick:()=>setCurrentBinStep(opt.val),
+                    style:{
+                      background:isSel?`#38bdf8`:`transparent`,
+                      color:isSel?`#0f172a`:`#94a3b8`,
+                      border:`none`,
+                      borderRadius:3,
+                      fontSize:9,
+                      fontWeight:isSel?700:400,
+                      padding:`2px 6px`,
+                      cursor:`pointer`
+                    },
+                    children:opt.label
+                  });
+                })
               }),
-              (0,Y.jsxs)(qb,{
-                size:`small`,
-                value:currentTimeRange,
-                onChange:e=>setCurrentTimeRange(e.target.value),
-                children:[
-                  (0,Y.jsx)(qb.Button,{value:`SON_1_SAAT`,children:`1s`}),
-                  (0,Y.jsx)(qb.Button,{value:`SON_24_SAAT`,children:`1g`}),
-                  (0,Y.jsx)(qb.Button,{value:`SON_1_HAFTA`,children:`1h`}),
-                  (0,Y.jsx)(qb.Button,{value:`ALL`,children:`Tüm`})
-                ]
+              (0,Y.jsx)(`div`,{
+                style:{display:`inline-flex`,backgroundColor:`#1e293b`,borderRadius:4,padding:1,border:`1px solid #334155`},
+                children:timeOptions.map(opt=>{
+                  let isSel=currentTimeRange===opt.val;
+                  return (0,Y.jsx)(`button`,{
+                    key:opt.val,
+                    type:`button`,
+                    onClick:()=>setCurrentTimeRange(opt.val),
+                    style:{
+                      background:isSel?`#3b82f6`:`transparent`,
+                      color:isSel?`#ffffff`:`#94a3b8`,
+                      border:`none`,
+                      borderRadius:3,
+                      fontSize:9,
+                      fontWeight:isSel?700:400,
+                      padding:`2px 6px`,
+                      cursor:`pointer`
+                    },
+                    children:opt.label
+                  });
+                })
               }),
               (0,Y.jsx)(zb,{
                 size:`small`,
                 onClick:()=>setCurrentViewMode(currentViewMode===`CHART`?`TABLE`:`CHART`),
-                style:{backgroundColor:`#1e293b`,borderColor:`#334155`,color:`#cbd5e1`,fontSize:11},
-                children:currentViewMode===`CHART`?`📋`:`📊`
+                style:{backgroundColor:`#1e293b`,borderColor:`#334155`,color:`#cbd5e1`,fontSize:10,height:22,lineHeight:`20px`,padding:`0 6px`},
+                children:currentViewMode===`CHART`?`📋 Tablo`:`📊 Grafik`
               })
             ]
           })
         ]
       }),
       (0,Y.jsxs)(`div`,{
-        style:{position:`relative`,minHeight:300},
+        style:{position:`relative`,flex:1,minHeight:320},
         children:[
           isLoading&&(0,Y.jsx)(`div`,{style:{position:`absolute`,inset:0,backgroundColor:`rgba(11, 19, 41, 0.7)`,display:`flex`,alignItems:`center`,justifyContent:`center`,zIndex:10},children:(0,Y.jsx)(Cw,{tip:`Doluluk hesaplanıyor...`})}),
-          currentViewMode===`CHART`?(0,Y.jsx)(`div`,{ref:chartContainerRef,style:{width:`100%`,height:320}}):(0,Y.jsx)(`div`,{
-            style:{maxHeight:320,overflowY:`auto`},
+          currentViewMode===`CHART`?(0,Y.jsx)(`div`,{ref:chartContainerRef,style:{width:`100%`,height:340}}):(0,Y.jsx)(`div`,{
+            style:{maxHeight:340,overflowY:`auto`},
             children:(0,Y.jsxs)(`table`,{
               style:{width:`100%`,borderCollapse:`collapse`,fontSize:11,color:`#f8fafc`},
               children:[
@@ -852,7 +887,7 @@ Please report this to https://github.com/markedjs/marked.`,e){let e=`<p>An error
                     children:[
                       (0,Y.jsx)(`td`,{style:{padding:`6px 8px`,color:`#38bdf8`,fontWeight:600},children:b.bandName}),
                       (0,Y.jsx)(`td`,{style:{padding:`6px 8px`,color:`#cbd5e1`},children:b.bandDescription}),
-                      (0,Y.jsx)(`td`,{style:{padding:`6px 8px`,color:`#ef4444`,fontWeight:700},children:`%`+b.totalOccupancyPercent}),
+                      (0,Y.jsx)(`td`,{style:{padding:`6px 8px`,color:b.totalOccupancyPercent>0?`#ef4444`:`#64748b`,fontWeight:700},children:`%`+b.totalOccupancyPercent}),
                       (0,Y.jsx)(`td`,{style:{padding:`6px 8px`,color:`#94a3b8`},children:b.totalOccupiedMhz+` / `+b.totalBandwidthMhz+` MHz`}),
                       (0,Y.jsx)(`td`,{style:{padding:`6px 8px`,color:`#cbd5e1`,fontSize:10},children:Object.values(b.identityDetails||{}).flatMap(x=>x.topRadars||[]).slice(0,3).join(`, `)||`-`})
                     ]
@@ -866,7 +901,7 @@ Please report this to https://github.com/markedjs/marked.`,e){let e=`<p>An error
       (0,Y.jsxs)(`div`,{
         style:{marginTop:8,paddingTop:6,borderTop:`1px solid #1e293b`,display:`flex`,justifyContent:`space-between`,fontSize:10,color:`#64748b`},
         children:[
-          (0,Y.jsxs)(`span`,{children:[`🕒 `,occupancyData?.timeRangeLabel||currentTimeRange, ` | 📏 `, currentBinStep, ` MHz`]}),
+          (0,Y.jsxs)(`span`,{children:[`🕒 `,occupancyData?.timeRangeLabel||currentTimeRange,` | 📏 `,currentBinStep,` MHz`]}),
           (0,Y.jsxs)(`span`,{children:[`🛡️ Teşhis: `,currentIdentities.join(`, `)]})
         ]
       }),
