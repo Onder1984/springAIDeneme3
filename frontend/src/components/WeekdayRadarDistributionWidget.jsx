@@ -348,19 +348,37 @@ export default function WeekdayRadarDistributionWidget({
     };
   }, [data, viewMode, source, recordType]);
 
+  // Modal ECharts Render Fonksiyonu
+  const renderModalChart = (el) => {
+    const target = el || modalChartRef.current;
+    if (!target || !data) return;
+    try {
+      let inst = modalChartInstance.current;
+      if (!inst) {
+        inst = echarts.init(target, 'dark');
+        modalChartInstance.current = inst;
+      }
+      const opt = buildChartOption(data);
+      inst.clear();
+      inst.setOption(opt, { notMerge: true, replaceMerge: ['series', 'radar', 'legend'] });
+      inst.resize();
+      setTimeout(() => inst?.resize(), 50);
+      setTimeout(() => inst?.resize(), 250);
+    } catch (err) {
+      console.error('Modal hafta radar grafik render hatası:', err);
+    }
+  };
+
   // Modal ECharts Çizimi
   useEffect(() => {
-    if (!modalVisible || !modalChartRef.current || !data) return;
-
-    if (!modalChartInstance.current) {
-      modalChartInstance.current = echarts.init(modalChartRef.current);
-    }
-
-    const opt = buildChartOption(data);
-    modalChartInstance.current.setOption(opt, true);
-
-    const t = setTimeout(() => modalChartInstance.current?.resize(), 100);
-    return () => clearTimeout(t);
+    if (!modalVisible || !data) return;
+    renderModalChart();
+    const t1 = setTimeout(renderModalChart, 50);
+    const t2 = setTimeout(renderModalChart, 200);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [modalVisible, data, source, recordType]);
 
   // Temizleme
@@ -701,6 +719,13 @@ export default function WeekdayRadarDistributionWidget({
           </Space>
         }
         open={modalVisible}
+        afterOpenChange={(open) => {
+          if (open) {
+            renderModalChart();
+            setTimeout(renderModalChart, 50);
+            setTimeout(renderModalChart, 250);
+          }
+        }}
         onCancel={() => setModalVisible(false)}
         footer={null}
         width={920}
@@ -710,10 +735,16 @@ export default function WeekdayRadarDistributionWidget({
           header: { backgroundColor: '#0b1120', borderBottom: '1px solid #1e293b' }
         }}
       >
-        <div style={{ padding: '8px 0' }}>
+        <div style={{ padding: '8px 0', height: 540, width: '100%', minHeight: 460 }}>
           <div
-            ref={modalChartRef}
-            style={{ width: '100%', height: 540 }}
+            ref={(el) => {
+              modalChartRef.current = el;
+              if (el && modalVisible && data) {
+                renderModalChart(el);
+                setTimeout(() => renderModalChart(el), 60);
+              }
+            }}
+            style={{ width: '100%', height: '100%', minHeight: 460 }}
           />
         </div>
       </Modal>

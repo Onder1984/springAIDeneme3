@@ -542,7 +542,7 @@ Please report this to https://github.com/markedjs/marked.`,e){let e=`<p>An error
   let modalContainerRef=(0,v.useRef)(null);
   let chartInstRef=(0,v.useRef)(null);
   let modalInstRef=(0,v.useRef)(null);
-  const renderModalWeekday=(el)=>{let target=el||modalContainerRef.current;if(!target||!distData)return;try{let inst=Iq(target,'dark');modalInstRef.current=inst;let opt=buildOption(distData);if(opt){inst.clear();inst.setOption(opt,{notMerge:!0,replaceMerge:['series','radar','legend']});inst.resize();setTimeout(()=>inst?.resize(),50);setTimeout(()=>inst?.resize(),250)}}catch(e){console.error(e)}};
+  const renderModalOccupancy=(el)=>{let target=el||modalContainerRef.current;if(!target||!occupancyData)return;try{let inst=Iq(target,'dark');modalInstRef.current=inst;let opt=createChartOption(occupancyData,!0);if(opt){inst.clear();inst.setOption(opt,{notMerge:!0,replaceMerge:['series','legend']});inst.resize();setTimeout(()=>inst?.resize(),50);setTimeout(()=>inst?.resize(),250)}}catch(e){console.error('Modal occupancy error:',e)}};
 
   const ID_CONFIG={
     DUSMAN:{label:`DÜŞMAN`,color:`#ef4444`,grad:[`#f87171`,`#dc2626`]},
@@ -735,19 +735,11 @@ Please report this to https://github.com/markedjs/marked.`,e){let e=`<p>An error
   },[occupancyData,currentViewMode]);
 
   (0,v.useEffect)(()=>{
-    if(!isModalOpen||!modalContainerRef.current)return;
-    let timer=setTimeout(()=>{
-      if(!modalContainerRef.current)return;
-      let modalChart=Iq(modalContainerRef.current,`dark`);
-      modalInstRef.current=modalChart;
-      if(occupancyData&&occupancyData.bands){
-        let opt=createChartOption(occupancyData,!0);
-        modalChart.setOption(opt,!0);
-        modalChart.resize();
-      }
-    },100);
-    return()=>clearTimeout(timer);
-  },[isModalOpen,occupancyData]);
+    if(!isModalOpen||!occupancyData)return;
+    renderModalOccupancy();
+    let t1=setTimeout(renderModalOccupancy,50),t2=setTimeout(renderModalOccupancy,200);
+    return()=>{clearTimeout(t1);clearTimeout(t2)};
+  },[isModalOpen,occupancyData,currentTimeRange,currentIdentities,currentBinStep]);
 
   const stepOptions=[{label:`50 MHz`,val:50},{label:`100 MHz`,val:100},{label:`200 MHz`,val:200}];
   const timeOptions=[{label:`1 Saat`,val:`SON_1_SAAT`},{label:`1 Gün`,val:`SON_24_SAAT`},{label:`1 Hafta`,val:`SON_1_HAFTA`},{label:`Tümü`,val:`ALL`}];
@@ -909,11 +901,13 @@ Please report this to https://github.com/markedjs/marked.`,e){let e=`<p>An error
       (0,Y.jsx)(Nw,{
         title:`📡 Radar Spektrum Doluluk & Kullanım Yoğunluğu (Tam Ekran)`,
         open:isModalOpen,
+        afterOpenChange:e=>{if(e){renderModalOccupancy();setTimeout(renderModalOccupancy,50);setTimeout(renderModalOccupancy,250)}},
         onCancel:()=>setIsModalOpen(!1),
         footer:null,
         width:`90vw`,
+        destroyOnClose:!1,
         styles:{content:{backgroundColor:`#0b1329`,borderColor:`#334155`},header:{backgroundColor:`#0f172a`,borderBottom:`1px solid #334155`}},
-        children:(0,Y.jsx)(`div`,{ref:modalContainerRef,style:{width:`100%`,height:`70vh`}})
+        children:(0,Y.jsx)(`div`,{style:{height:`70vh`,width:`100%`,minHeight:480},children:(0,Y.jsx)(`div`,{ref:el=>{modalContainerRef.current=el;if(el&&isModalOpen&&occupancyData){renderModalOccupancy(el);setTimeout(()=>renderModalOccupancy(el),60)}},style:{width:`100%`,height:`100%`,minHeight:480}})})
       })
     ]
   });
@@ -1197,6 +1191,10 @@ return null},_=[{label:`📡 Genel Taktik Durumu Özetle`,prompt:`Sahadaki genel
       series:seriesList
     };
   };
+
+  
+
+  const renderModalWeekday=(el)=>{let target=el||modalContainerRef.current;if(!target||!distData)return;try{let inst=Iq(target,'dark');modalInstRef.current=inst;let opt=buildOption(distData);if(opt){inst.clear();inst.setOption(opt,{notMerge:!0,replaceMerge:['series','radar','legend']});inst.resize();setTimeout(()=>inst?.resize(),50);setTimeout(()=>inst?.resize(),250)}}catch(e){console.error('Modal weekday error:',e)}};
 
   (0,v.useEffect)(()=>{
     if(curViewMode!=='CHART'||!chartContainerRef.current||!distData)return;

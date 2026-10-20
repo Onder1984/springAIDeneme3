@@ -337,18 +337,21 @@ export default function RadarSpectrumOccupancyWidget({
   }, [data, viewMode]);
 
   // Modal Fullscreen Render Fonksiyonu
-  const renderModalChart = () => {
-    if (!modalChartRef.current || !data) return;
+  const renderModalChart = (el) => {
+    const target = el || modalChartRef.current;
+    if (!target || !data) return;
     try {
-      let inst = echarts.getInstanceByDom(modalChartRef.current);
+      let inst = modalChartInstance.current;
       if (!inst) {
-        inst = echarts.init(modalChartRef.current);
+        inst = echarts.init(target, 'dark');
+        modalChartInstance.current = inst;
       }
-      modalChartInstance.current = inst;
       const option = buildChartOption(data, true);
       inst.clear();
       inst.setOption(option, { notMerge: true, replaceMerge: ['series', 'legend'] });
       inst.resize();
+      setTimeout(() => inst?.resize(), 50);
+      setTimeout(() => inst?.resize(), 250);
     } catch (err) {
       console.error('Modal spektrum doluluk grafik render hatası:', err);
     }
@@ -360,11 +363,9 @@ export default function RadarSpectrumOccupancyWidget({
     renderModalChart();
     const t1 = setTimeout(renderModalChart, 50);
     const t2 = setTimeout(renderModalChart, 200);
-    const t3 = setTimeout(renderModalChart, 400);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
-      clearTimeout(t3);
     };
   }, [modalVisible, data, viewMode]);
 
@@ -671,8 +672,8 @@ export default function RadarSpectrumOccupancyWidget({
             ref={(el) => {
               modalChartRef.current = el;
               if (el && modalVisible && data) {
-                renderModalChart();
-                setTimeout(renderModalChart, 60);
+                renderModalChart(el);
+                setTimeout(() => renderModalChart(el), 60);
               }
             }}
             style={{ width: '100%', height: '100%' }}
